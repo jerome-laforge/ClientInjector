@@ -101,7 +101,11 @@ func extractAllLeaseTime(dp *dhcpv4.DhcpPacket) (t0, t1, t2 time.Time) {
 	} else {
 		durationT0 = 24 * time.Hour
 	}
-	t0 = now.Add(durationT0)
+
+	if durationT0 < time.Minute {
+		// fallback for t0
+		durationT0 = 24 * time.Minute
+	}
 
 	opt58 := new(option.Option58RenewalTimeValue)
 	if found, err := dp.GetOption(opt58); err == nil && found {
@@ -109,7 +113,6 @@ func extractAllLeaseTime(dp *dhcpv4.DhcpPacket) (t0, t1, t2 time.Time) {
 	} else {
 		durationT1 = durationT0 / 2
 	}
-	t1 = now.Add(durationT1)
 
 	opt59 := new(option.Option59RebindingTimeValue)
 	if found, err := dp.GetOption(opt59); err == nil && found {
@@ -117,6 +120,15 @@ func extractAllLeaseTime(dp *dhcpv4.DhcpPacket) (t0, t1, t2 time.Time) {
 	} else {
 		durationT2 = durationT0 * 7 / 8
 	}
+
+	if !(durationT1 < durationT2 && durationT2 < durationT0) {
+		// fallback for t1 & t2
+		durationT1 = durationT0 / 2
+		durationT2 = durationT0 * 7 / 8
+	}
+
+	t0 = now.Add(durationT0)
+	t1 = now.Add(durationT1)
 	t2 = now.Add(durationT2)
 	return
 }
