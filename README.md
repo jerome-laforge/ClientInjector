@@ -1,11 +1,11 @@
 # ClientInjector
 ClientInjector is client that tries to emulate a real client (with MAC@ Spoofing, ARP).<br>
 Currently, only DHCPv4 is supported (planed to add DHCPv6).<br>
-Special thank to this wonderful project [gopacket] (https://github.com/google/gopacket)
+Special thank to this wonderful project [gopacket] (https://github.com/google/gopacket)<br>
 
 ## Build
 Use [gb](http://getgb.io)
 
 ## Run
-Testing only on Linux.
-You have to be root for reading packet on wire (use c binding of libpcap via gopacket).
+Testing only on Linux.<br>
+You have to be root for reading packet on wire (use c binding of libpcap via gopacket).<br>
