@@ -4,7 +4,11 @@ Currently, only DHCPv4 is supported (planed to add DHCPv6).<br>
 Special thank to this wonderful project [gopacket] (https://github.com/google/gopacket)<br>
 
 ## Build
-Use [gb](http://getgb.io)
+Use [gb](http://getgb.io)<br>
+Pcap dev headers might be necessary<br>
+```
+apt-get install libpcap-dev
+```
 
 ## Run
 Testing only on Linux.<br>
