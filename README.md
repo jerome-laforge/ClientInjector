@@ -5,3 +5,7 @@ Special thank to this wonderful project [gopacket] (https://github.com/google/go
 
 ## Build
 Use [gb](http://getgb.io)
+
+## Run
+Testing only on Linux.
+You have to be root for reading packet on wire (use c binding of libpcap via gopacket).
