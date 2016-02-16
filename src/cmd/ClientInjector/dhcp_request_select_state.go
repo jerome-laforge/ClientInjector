@@ -38,8 +38,11 @@ func (self requestSelectState) do() iState {
 	}
 	udp.SetNetworkLayerForChecksum(ipv4)
 
+	buf := GetBuffer()
+	defer ReleaseBuffer(buf)
+
 	request := new(dhcpv4.DhcpPacket)
-	request.Construct(option.DHCPREQUEST)
+	request.ConstructWithPreAllocatedBuffer(buf, option.DHCPREQUEST)
 	request.SetXid(self.xid)
 	request.SetMacAddr([]byte(self.macAddr))
 

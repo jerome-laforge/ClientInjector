@@ -40,8 +40,11 @@ func (self discoverState) do() iState {
 	}
 	udp.SetNetworkLayerForChecksum(ipv4)
 
+	buf := GetBuffer()
+	defer ReleaseBuffer(buf)
+
 	discover := new(dhcpv4.DhcpPacket)
-	discover.Construct(option.DHCPDISCOVER)
+	discover.ConstructWithPreAllocatedBuffer(buf, option.DHCPDISCOVER)
 	discover.SetMacAddr([]byte(self.macAddr))
 	discover.SetXid(self.xid)
 
