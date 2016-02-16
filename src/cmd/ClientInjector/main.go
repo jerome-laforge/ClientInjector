@@ -14,26 +14,37 @@ import (
 )
 
 func main() {
-	ifaceName := flag.String("eth", "eth0", "Define on which interface the customer will bind")
-	nbDhcpClient := flag.Uint("nb_dhcp", 1, "Define number of dhcp client")
-	pacing := flag.Duration("pacing", 100*time.Millisecond, "Define the pacing for launch new dhcp client")
+	var (
+		paramIfaceName    = flag.String("eth", "eth0", "Define on which interface the customer will bind")
+		paramFirstMacAddr = flag.String("mac", "00:00:14:11:19:77", "First mac address use for the first client (incremented by one for each next clients)")
+		paramNbDhcpClient = flag.Uint("nb_dhcp", 1, "Define number of dhcp client")
+		paramPacing       = flag.Duration("pacing", 100*time.Millisecond, "Define the pacing for launch new dhcp client")
+	)
 	flag.Parse()
 
-	rand.Seed(time.Now().UTC().UnixNano())
+	firstMacAddr, err := net.ParseMAC(*paramFirstMacAddr)
+	if err != nil {
+		panic(err)
+	}
 
-	firstMacAddr, _ := net.ParseMAC("00:00:14:11:19:77")
 	intFirstMacAddr := util.ConvertMax8byteToUint64([]byte(firstMacAddr))
+	macAddr := make([]byte, 8)
+	util.ConvertUint64To8byte(intFirstMacAddr+uint64(*paramNbDhcpClient)-1, macAddr)
 
-	for i := uint(0); i < *nbDhcpClient; i++ {
+	log.Println("First Mac Addr", firstMacAddr)
+	log.Println("Last  Mac Addr", net.HardwareAddr(macAddr[2:]))
+
+	rand.Seed(time.Now().UTC().UnixNano())
+	for i := uint(0); i < *paramNbDhcpClient; i++ {
 		macAddr := make([]byte, 8)
 		util.ConvertUint64To8byte(intFirstMacAddr+uint64(i), macAddr)
 		macAddr = macAddr[2:]
-		if _, err := CreateDhcpClient(*ifaceName, macAddr); err != nil {
-			log.Printf("interface %v: %v", *ifaceName, err)
+		if _, err := CreateDhcpClient(*paramIfaceName, macAddr); err != nil {
+			log.Printf("interface %v: %v", *paramIfaceName, err)
 			os.Exit(1)
 		}
 
-		time.Sleep(*pacing)
+		time.Sleep(*paramPacing)
 	}
 
 	select {}
