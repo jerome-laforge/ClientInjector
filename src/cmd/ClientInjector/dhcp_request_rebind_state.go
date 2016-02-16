@@ -47,10 +47,6 @@ func (self *requestRebindState) do() iState {
 	opt50.Construct(self.ipAddr)
 	request.AddOption(opt50)
 
-	opt54 := new(option.Option54DhcpServerIdentifier)
-	opt54.Construct(self.ServerIp)
-	request.AddOption(opt54)
-
 	opt61 := new(option.Option61ClientIdentifier)
 	opt61.Construct(byte(1), self.macAddr)
 	request.AddOption(opt61)
