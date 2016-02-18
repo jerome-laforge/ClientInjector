@@ -47,6 +47,11 @@ func (self requestRenewState) do() iState {
 	request.SetXid(self.xid)
 	request.SetMacAddr([]byte(self.macAddr))
 
+	if self.ipAddr == 0 {
+		request.SetGiAddr(self.giaddr)
+		request.AddOption(generateOption82([]byte(self.macAddr)))
+	}
+
 	opt50 := new(option.Option50RequestedIpAddress)
 	opt50.Construct(self.ipAddr)
 	request.AddOption(opt50)
