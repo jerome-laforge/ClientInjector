@@ -90,6 +90,6 @@ func getPcapHandleFor(ifaceName string) (*pcap.Handle, error) {
 	}
 
 	// Open up a pcap handle for packet reads/writes.
-	return pcap.OpenLive(iface.Name, 65536, true, pcap.BlockForever)
+	return pcap.OpenLive(iface.Name, 512, true, pcap.BlockForever)
 
 }
