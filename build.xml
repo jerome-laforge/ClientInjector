@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="ClientInjector" basedir="." default="build">
+	<property file="setEnv.properties"/>
+	<property name="GOPATH" value="${basedir}:${basedir}/vendor"/>
+
+	<property name="GO-TOOLS" value="${basedir}/go-tools"/>
+	<property environment="env"/>
+
+	<condition property="gb.intern.present" description="Check if gb is into the project">
+		<available file="${GO-TOOLS}/bin/gb" type="file"/>
+	</condition>
+
+	<condition property="gb.path.present" description="Check if gb is into the PATH">
+		<available file="gb" filepath="${env.PATH}" property="gb.path.present"/>
+	</condition>
+
+	<condition property="gb.not.detected" description="Check if gb not detected (neither into the path nor into project)">
+		<not>
+			<or>
+				<isset property="gb.path.present"/>
+				<isset property="gb.intern.present"/>
+			</or>
+		</not>
+	</condition>
+
+	<target name="clean">
+		<delete dir="pkg" quiet="true"/>
+		<delete dir="out" quiet="true"/>
+		<delete dir="bin" quiet="true"/>
+		<delete dir="tmp" quiet="true"/>
+	</target>
+
+	<target name="deep_clean" depends="clean">
+		<delete dir="${GO-TOOLS}" quiet="true"/>
+	</target>
+
+	<target name="build" depends="clean, -gb, test">
+		<!--echo message="gb.intern.present : ${gb.intern.present}"/>
+		<echo message="gb.path.present : ${gb.path.present}"/>
+		<echo message="gb.not.detected : ${gb.not.detected}"/>
+		<echo message="GB_CMD : ${GB_CMD}"/-->
+		<exec executable="${GB_CMD}" logerror="true" dir="${basedir}">
+			<env key="Path" value="${GO-TOOLS}/bin/"/>
+			<env key="GOOS" value="${GOOS}"/>
+			<env key="GOARCH" value="${GOARCH}"/>
+			<arg value="build"/>
+			<arg value="all"/>
+		</exec>
+	</target>
+
+	<target name="build_race_detector" depends="clean, -gb, test">
+		<exec executable="${GB_CMD}" logerror="true" dir="${basedir}">
+			<env key="Path" value="${GO-TOOLS}/bin/"/>
+			<env key="GOOS" value="${GOOS}"/>
+			<env key="GOARCH" value="${GOARCH}"/>
+			<arg value="build"/>
+			<arg value="-race"/>
+			<arg value="all"/>
+		</exec>
+	</target>
+
+	<target name="test" depends="-gb">
+		<exec executable="${GB_CMD}" failonerror="true" logerror="true">
+			<arg value="test"/>
+			<arg value="-v"/>
+			<arg value="-test.bench"/>
+			<arg value="Bench"/>
+		</exec>
+	</target>
+
+	<target name="-gb_install" depends="" if="gb.not.detected" description="install gb into project via git clone">
+		<echo message="!!!!!GB IS NOT INTO PATH!!!!!"/>
+		<echo message="!!!!!SO CLONE GB FROM GITHUB, PLEASE WAIT!!!!!"/>
+		<exec executable="go" logerror="true">
+			<env key="GOPATH" value="${GO-TOOLS}"/>
+			<env key="http_proxy" value="${http_proxy}"/>
+			<env key="https_proxy" value="${https_proxy}"/>
+			<arg value="get"/>
+			<arg value="github.com/constabulary/gb/..."/>
+		</exec>
+	</target>
+
+	<target name="-gb_path_setter" depends="-gb_install" if="gb.path.present" description="set gb into path as command">
+		<property name="GB_CMD" value="gb"/>
+	</target>
+
+	<target name="-gb" depends="-gb_path_setter" unless="gb.path.present" description="set gb into project as command">
+		<property name="GB_CMD" value="${GO-TOOLS}/bin/gb"/>
+	</target>
+</project>
+
