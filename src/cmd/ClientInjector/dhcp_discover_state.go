@@ -46,7 +46,10 @@ func (self discoverState) do() iState {
 	discover := new(dhcpv4.DhcpPacket)
 	discover.ConstructWithPreAllocatedBuffer(buf, option.DHCPDISCOVER)
 	discover.SetMacAddr([]byte(self.macAddr))
+	discover.SetGiAddr(self.giaddr)
 	discover.SetXid(self.xid)
+
+	discover.AddOption(generateOption82([]byte(self.macAddr)))
 
 	bootp := &PayloadLayer{
 		contents: discover.Raw,

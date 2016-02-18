@@ -45,6 +45,7 @@ func (self *requestRebindState) do() iState {
 	request.ConstructWithPreAllocatedBuffer(buf, option.DHCPREQUEST)
 	request.SetXid(self.xid)
 	request.SetMacAddr([]byte(self.macAddr))
+	request.SetGiAddr(self.giaddr)
 
 	opt50 := new(option.Option50RequestedIpAddress)
 	opt50.Construct(self.ipAddr)
@@ -53,6 +54,8 @@ func (self *requestRebindState) do() iState {
 	opt61 := new(option.Option61ClientIdentifier)
 	opt61.Construct(byte(1), self.macAddr)
 	request.AddOption(opt61)
+
+	request.AddOption(generateOption82([]byte(self.macAddr)))
 
 	bootp := &PayloadLayer{
 		contents: request.Raw,

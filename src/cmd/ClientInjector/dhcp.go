@@ -17,7 +17,7 @@ type DhcpClient struct {
 	ctx          dhcpContext
 }
 
-func CreateDhcpClient(ifaceName string, macAddr net.HardwareAddr) (*DhcpClient, error) {
+func CreateDhcpClient(ifaceName string, macAddr net.HardwareAddr, giaddr uint32) (*DhcpClient, error) {
 	handle, err := getPcapHandleFor(ifaceName)
 	if err != nil {
 		return nil, err
@@ -35,6 +35,7 @@ func CreateDhcpClient(ifaceName string, macAddr net.HardwareAddr) (*DhcpClient, 
 		packetsource: gopacket.NewPacketSource(handle, layers.LayerTypeEthernet),
 		arpClient:    arpClient,
 		ArpContext:   arpContext,
+		giaddr:       giaddr,
 	}
 
 	d.ctx.packetsource.Lazy = true
@@ -64,12 +65,12 @@ type iState interface {
 
 type dhcpContext struct {
 	*ArpContext
-	arpClient     ArpClient
-	xid, ServerIp uint32
-	handle        *pcap.Handle
-	packetsource  *gopacket.PacketSource
-	t1, t2, t0    time.Time
-	state         iState
+	arpClient             ArpClient
+	xid, ServerIp, giaddr uint32
+	handle                *pcap.Handle
+	packetsource          *gopacket.PacketSource
+	t1, t2, t0            time.Time
+	state                 iState
 }
 
 func sentMsg(handle *pcap.Handle, layers ...gopacket.SerializableLayer) error {
@@ -131,4 +132,20 @@ func extractAllLeaseTime(dp *dhcpv4.DhcpPacket) (t0, t1, t2 time.Time) {
 	t1 = now.Add(durationT1)
 	t2 = now.Add(durationT2)
 	return
+}
+
+func generateOption82(macAddr net.HardwareAddr) *option.Option82DhcpAgentOption {
+	opt82_1 := new(option.Option82_1CircuitId)
+	opt82_1.Construct([]byte(macAddr))
+
+	opt82_2 := new(option.Option82_2RemoteId)
+	opt82_2.Construct([]byte(macAddr))
+
+	opt82 := new(option.Option82DhcpAgentOption)
+	opt82.Construct([]option.SubOption82{
+		opt82_1,
+		opt82_2,
+	})
+
+	return opt82
 }

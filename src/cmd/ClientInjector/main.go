@@ -17,12 +17,17 @@ func main() {
 	var (
 		paramIfaceName    = flag.String("eth", "eth0", "Define on which interface the customer will bind")
 		paramFirstMacAddr = flag.String("mac", "00:00:14:11:19:77", "First mac address use for the first client (incremented by one for each next clients)")
+		paramGiADDR       = flag.String("giaddr", "10.0.0.1", "Use as GiADDR into DHCPv4 header")
 		paramNbDhcpClient = flag.Uint("nb_dhcp", 1, "Define number of dhcp client")
 		paramPacing       = flag.Duration("pacing", 100*time.Millisecond, "Define the pacing for launch new dhcp client")
 	)
 	flag.Parse()
 
 	firstMacAddr, err := net.ParseMAC(*paramFirstMacAddr)
+	if err != nil {
+		panic(err)
+	}
+	giaddr, err := util.ConvertIpAddrToUint32(*paramGiADDR)
 	if err != nil {
 		panic(err)
 	}
@@ -39,7 +44,7 @@ func main() {
 		macAddr := make([]byte, 8)
 		util.ConvertUint64To8byte(intFirstMacAddr+uint64(i), macAddr)
 		macAddr = macAddr[2:]
-		if _, err := CreateDhcpClient(*paramIfaceName, macAddr); err != nil {
+		if _, err := CreateDhcpClient(*paramIfaceName, macAddr, giaddr); err != nil {
 			log.Printf("interface %v: %v", *paramIfaceName, err)
 			os.Exit(1)
 		}
