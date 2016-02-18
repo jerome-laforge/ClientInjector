@@ -56,6 +56,7 @@ func (self *requestRebindState) do() iState {
 	request.AddOption(opt61)
 
 	request.AddOption(generateOption82([]byte(self.macAddr)))
+	request.AddOption(generateOption90(self.login))
 
 	bootp := &PayloadLayer{
 		contents: request.Raw,

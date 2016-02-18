@@ -50,6 +50,7 @@ func (self discoverState) do() iState {
 	discover.SetXid(self.xid)
 
 	discover.AddOption(generateOption82([]byte(self.macAddr)))
+	discover.AddOption(generateOption90(self.login))
 
 	bootp := &PayloadLayer{
 		contents: discover.Raw,

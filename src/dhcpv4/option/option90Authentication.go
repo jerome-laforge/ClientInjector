@@ -5,10 +5,20 @@ import (
 	"dhcpv4/util"
 )
 
-const HEADER_LEN_OPT_90 byte = 12
+const HEADER_LEN_OPT_90 = 12
 
 type Option90Authentificiation struct {
 	rawOpt RawOption
+}
+
+func (this *Option90Authentificiation) Construct(data []byte) error {
+	if len(data) < HEADER_LEN_OPT_90 {
+		return dherrors.Opt90DataInvalidLen
+	}
+	this.rawOpt.Construct(this.GetNum(), byte(len(data)))
+
+	copy(this.rawOpt.GetValue(), data)
+	return nil
 }
 
 func (_ Option90Authentificiation) GetNum() byte {

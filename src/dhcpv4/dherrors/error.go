@@ -19,6 +19,7 @@ const (
 	Opt53NotFound                      = constant_dhcp_error("Option 53 not found")
 	Opt77InvalidLen                    = constant_dhcp_error("Option 77 has invalid length (< 2)")
 	Opt82_9IsMalformed                 = constant_dhcp_error("option 82.9 is malformed")
+	Opt90DataInvalidLen                = constant_dhcp_error("Option 90 : Data has invalid length")
 	Opt120DataInvalidLen               = constant_dhcp_error("Data has invalid length")
 	Opt120HasInvalidLen                = constant_dhcp_error("Option 120 has invalid length")
 	Opt120UnsupportedEncoding          = constant_dhcp_error("Unsupported encoding")

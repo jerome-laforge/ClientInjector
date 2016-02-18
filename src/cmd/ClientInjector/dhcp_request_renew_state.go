@@ -64,6 +64,8 @@ func (self requestRenewState) do() iState {
 	opt61.Construct(byte(1), self.macAddr)
 	request.AddOption(opt61)
 
+	request.AddOption(generateOption90(self.login))
+
 	bootp := &PayloadLayer{
 		contents: request.Raw,
 	}
