@@ -2,7 +2,7 @@ package option
 
 import "dhcpv4/dherrors"
 
-const HEADER_LEN_OPT_61 byte = 1
+const HEADER_LEN_OPT_61 = 1
 
 type Option61ClientIdentifier struct {
 	rawOpt RawOption

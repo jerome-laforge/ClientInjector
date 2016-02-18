@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-const LEN_OPT_53 byte = 1
+const LEN_OPT_53 = 1
 
 type Option53MessageType struct {
 	rawOpt RawOption

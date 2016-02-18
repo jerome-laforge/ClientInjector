@@ -7,12 +7,12 @@ import (
 	"fmt"
 )
 
-const HEADER_LEN_OPT_120 byte = 3
+const HEADER_LEN_OPT_120 = 3
 
 const (
-	ENC_OPT_120_FQDN    byte = iota
-	ENC_OPT_120_IP_LIST byte = iota
-	ENC_OPT_120_UNKNOWN byte = 255
+	ENC_OPT_120_FQDN    = iota
+	ENC_OPT_120_IP_LIST = iota
+	ENC_OPT_120_UNKNOWN = 255
 )
 
 type EncOption120 struct {

@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-const LEN_OPT_U_INT32 byte = 4
+const LEN_OPT_U_INT32 = 4
 
 type TypeUint32 struct {
 	rawOpt RawOption

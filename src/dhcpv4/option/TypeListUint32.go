@@ -24,9 +24,9 @@ func (typ *TypeListUint32) GetRawOption() RawOption {
 
 func (typ TypeListUint32) GetListUint32() []uint32 {
 	raw := typ.rawOpt.GetValue()
-	listUint32 := make([]uint32, len(raw)/int(LEN_OPT_U_INT32))
+	listUint32 := make([]uint32, len(raw)/LEN_OPT_U_INT32)
 	for i := range listUint32 {
-		listUint32[i] = util.Convert4byteToUint32(raw[i*int(LEN_OPT_U_INT32) : (i+1)*int(LEN_OPT_U_INT32)])
+		listUint32[i] = util.Convert4byteToUint32(raw[i*LEN_OPT_U_INT32 : (i+1)*LEN_OPT_U_INT32])
 	}
 	return listUint32
 }
@@ -35,10 +35,10 @@ func (typ *TypeListUint32) Construct(optNum byte, value []uint32) error {
 	if len(value) == 0 {
 		return errors.New(fmt.Sprintf("Option %d has invalid null length", optNum))
 	}
-	typ.rawOpt.Construct(optNum, byte(len(value)*int(LEN_OPT_U_INT32)))
+	typ.rawOpt.Construct(optNum, byte(len(value)*LEN_OPT_U_INT32))
 	optData := typ.rawOpt.GetValue()
 	for i, v := range value {
-		util.ConvertUint32To4byte(v, optData[i*int(LEN_OPT_U_INT32):(i+1)*int(LEN_OPT_U_INT32)])
+		util.ConvertUint32To4byte(v, optData[i*LEN_OPT_U_INT32:(i+1)*LEN_OPT_U_INT32])
 	}
 	return nil
 }
