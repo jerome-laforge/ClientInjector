@@ -19,7 +19,7 @@ func main() {
 		paramFirstMacAddr = flag.String("mac", "00:00:14:11:19:77", "First mac address use for the first client (incremented by one for each next clients)")
 		paramGiADDR       = flag.String("giaddr", "10.0.0.1", "Use as GiADDR into DHCPv4 header")
 		paramNbDhcpClient = flag.Uint("nb_dhcp", 1, "Define number of dhcp client")
-		paramLogin        = flag.String("login", "%08d", "Define what is use into option90")
+		paramLogin        = flag.String("login", "%08d", "Define what is use into option90. fmt.Printf and index of dhcp client with range [0, nb_dhcp[ is used.")
 		paramPacing       = flag.Duration("pacing", 100*time.Millisecond, "Define the pacing for launch new dhcp client")
 	)
 	flag.Parse()
