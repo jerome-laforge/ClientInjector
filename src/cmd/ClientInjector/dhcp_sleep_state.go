@@ -3,6 +3,7 @@ package main
 import (
 	"dhcpv4/util"
 	"log"
+	"net"
 	"time"
 )
 
@@ -11,7 +12,8 @@ type sleepState struct {
 }
 
 func (self sleepState) do() iState {
-	log.Println(self.macAddr, "ip", util.ConvertUint32ToIpAddr(self.ipAddr), "sleep until t1", self.t1)
+	macAddr := self.macAddr.Load().(net.HardwareAddr)
+	log.Println(macAddr, "ip", util.ConvertUint32ToIpAddr(self.ipAddr.Load().(uint32)), "sleep until t1", self.t1)
 	time.Sleep(self.t1.Sub(time.Now()))
 
 	return requestRenewState{
@@ -24,6 +26,7 @@ type timeoutRenewState struct {
 }
 
 func (self timeoutRenewState) do() iState {
+	macAddr := self.macAddr.Load().(net.HardwareAddr)
 	now := time.Now()
 	timeout := self.t2.Sub(now) / 2
 	var nextState iState
@@ -38,7 +41,7 @@ func (self timeoutRenewState) do() iState {
 		}
 	}
 
-	log.Println(self.macAddr, "ip", util.ConvertUint32ToIpAddr(self.ipAddr), "sleep until ", now.Add(timeout))
+	log.Println(macAddr, "ip", util.ConvertUint32ToIpAddr(self.ipAddr.Load().(uint32)), "sleep until ", now.Add(timeout))
 	time.Sleep(timeout)
 	return nextState
 }
@@ -48,6 +51,7 @@ type timeoutRebindState struct {
 }
 
 func (self timeoutRebindState) do() iState {
+	macAddr := self.macAddr.Load().(net.HardwareAddr)
 	now := time.Now()
 	timeout := self.t0.Sub(now) / 2
 	var nextState iState
@@ -62,7 +66,7 @@ func (self timeoutRebindState) do() iState {
 		}
 	}
 
-	log.Println(self.macAddr, "ip", util.ConvertUint32ToIpAddr(self.ipAddr), "sleep until ", now.Add(timeout))
+	log.Println(macAddr, "ip", util.ConvertUint32ToIpAddr(self.ipAddr.Load().(uint32)), "sleep until ", now.Add(timeout))
 	time.Sleep(timeout)
 	return nextState
 }

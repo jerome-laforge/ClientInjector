@@ -20,10 +20,11 @@ type discoverState struct {
 
 func (self discoverState) do() iState {
 	in := self.packetSource.Packets()
+	macAddr := self.macAddr.Load().(net.HardwareAddr)
 
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
-		SrcMAC:       self.macAddr,
+		SrcMAC:       macAddr,
 		DstMAC:       hwAddrBcast,
 		EthernetType: layers.EthernetTypeIPv4,
 	}
@@ -45,11 +46,11 @@ func (self discoverState) do() iState {
 
 	discover := new(dhcpv4.DhcpPacket)
 	discover.ConstructWithPreAllocatedBuffer(buf, option.DHCPDISCOVER)
-	discover.SetMacAddr([]byte(self.macAddr))
+	discover.SetMacAddr([]byte(macAddr))
 	discover.SetGiAddr(self.giaddr)
 	discover.SetXid(self.xid)
 
-	discover.AddOption(generateOption82([]byte(self.macAddr)))
+	discover.AddOption(generateOption82([]byte(macAddr)))
 	discover.AddOption(generateOption90(self.login))
 
 	bootp := &PayloadLayer{
@@ -62,7 +63,7 @@ func (self discoverState) do() iState {
 	for {
 		// send discover
 		for err := sentMsg(self.handle, eth, ipv4, udp, bootp); err != nil; {
-			log.Println(self.macAddr, "error sending discover", err)
+			log.Println(macAddr, "error sending discover", err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -79,13 +80,13 @@ func (self discoverState) do() iState {
 			timeout = deadline.Sub(time.Now())
 			select {
 			case <-time.After(timeout):
-				log.Println(self.macAddr, "timeout")
+				log.Println(macAddr, "timeout")
 				goto TIMEOUT
 			case packet = <-in:
 				linkLayer := packet.Layer(layers.LayerTypeEthernet)
 
 				// Is it for me?
-				if !bytes.Equal([]byte(linkLayer.(*layers.Ethernet).DstMAC), self.macAddr) {
+				if !bytes.Equal([]byte(linkLayer.(*layers.Ethernet).DstMAC), macAddr) {
 					// no, ignore this packet.
 					continue
 				}
@@ -104,11 +105,11 @@ func (self discoverState) do() iState {
 				if msgType, err := dp.GetTypeMessage(); err == nil {
 					switch msgType {
 					case option.DHCPOFFER:
-						self.ipAddr = dp.GetYourIp()
+						self.ipAddr.Store(dp.GetYourIp())
 						self.serverIp = dp.GetNextServerIp()
 						err := self.arpClient.sendGratuitousARP()
 						if err != nil {
-							fmt.Println(self.macAddr, "send gratuitousARP error", err)
+							fmt.Println(macAddr, "send gratuitousARP error", err)
 						}
 
 						self.t0, self.t1, self.t2 = extractAllLeaseTime(dp)
@@ -117,11 +118,11 @@ func (self discoverState) do() iState {
 							dhcpContext: self.dhcpContext,
 						}
 					default:
-						log.Println(self.macAddr, fmt.Sprintf("Unexcpected message [Excpected: %s] [Actual: %s]", option.DHCPDISCOVER, msgType))
+						log.Println(macAddr, fmt.Sprintf("Unexcpected message [Excpected: %s] [Actual: %s]", option.DHCPDISCOVER, msgType))
 						continue
 					}
 				} else {
-					log.Println(self.macAddr, "Option 53 is missing")
+					log.Println(macAddr, "Option 53 is missing")
 					continue
 				}
 			}

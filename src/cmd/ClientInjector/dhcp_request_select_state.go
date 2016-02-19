@@ -19,9 +19,10 @@ type requestSelectState struct {
 
 func (self requestSelectState) do() iState {
 	in := self.packetSource.Packets()
+	macAddr := self.macAddr.Load().(net.HardwareAddr)
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
-		SrcMAC:       self.macAddr,
+		SrcMAC:       macAddr,
 		DstMAC:       hwAddrBcast,
 		EthernetType: layers.EthernetTypeIPv4,
 	}
@@ -44,11 +45,11 @@ func (self requestSelectState) do() iState {
 	request := new(dhcpv4.DhcpPacket)
 	request.ConstructWithPreAllocatedBuffer(buf, option.DHCPREQUEST)
 	request.SetXid(self.xid)
-	request.SetMacAddr([]byte(self.macAddr))
+	request.SetMacAddr([]byte(macAddr))
 	request.SetGiAddr(self.giaddr)
 
 	opt50 := new(option.Option50RequestedIpAddress)
-	opt50.Construct(self.ipAddr)
+	opt50.Construct(self.ipAddr.Load().(uint32))
 	request.AddOption(opt50)
 
 	opt54 := new(option.Option54DhcpServerIdentifier)
@@ -56,10 +57,10 @@ func (self requestSelectState) do() iState {
 	request.AddOption(opt54)
 
 	opt61 := new(option.Option61ClientIdentifier)
-	opt61.Construct(byte(1), self.macAddr)
+	opt61.Construct(byte(1), macAddr)
 	request.AddOption(opt61)
 
-	request.AddOption(generateOption82([]byte(self.macAddr)))
+	request.AddOption(generateOption82([]byte(macAddr)))
 
 	request.AddOption(generateOption90(self.login))
 
@@ -70,7 +71,7 @@ func (self requestSelectState) do() iState {
 	for {
 		// send request
 		for err := sentMsg(self.handle, eth, ipv4, udp, bootp); err != nil; {
-			log.Println(self.macAddr, "error sending request", err)
+			log.Println(macAddr, "error sending request", err)
 			time.Sleep(2 * time.Second)
 		}
 
@@ -84,13 +85,13 @@ func (self requestSelectState) do() iState {
 			timeout = deadline.Sub(time.Now())
 			select {
 			case <-time.After(timeout):
-				log.Println(self.macAddr, "timeout")
+				log.Println(macAddr, "timeout")
 				goto TIMEOUT
 			case packet = <-in:
 				linkLayer := packet.Layer(layers.LayerTypeEthernet)
 
 				// Is it for me?
-				if !bytes.Equal([]byte(linkLayer.(*layers.Ethernet).DstMAC), self.macAddr) {
+				if !bytes.Equal([]byte(linkLayer.(*layers.Ethernet).DstMAC), macAddr) {
 					// no, ignore this packet.
 					continue
 				}
@@ -114,16 +115,16 @@ func (self requestSelectState) do() iState {
 							dhcpContext: self.dhcpContext,
 						}
 					case option.DHCPNAK:
-						log.Println(self.macAddr, "Receive NAK")
+						log.Println(macAddr, "Receive NAK")
 						return discoverState{
 							dhcpContext: self.dhcpContext,
 						}
 					default:
-						log.Println(self.macAddr, fmt.Sprintf("Unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
+						log.Println(macAddr, fmt.Sprintf("Unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
 						continue
 					}
 				} else {
-					log.Println(self.macAddr, "Option 53 is missing")
+					log.Println(macAddr, "Option 53 is missing")
 					continue
 				}
 			}

@@ -22,7 +22,7 @@ func (self requestRenewState) do() iState {
 	in := self.packetSource.Packets()
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
-		SrcMAC:       self.macAddr,
+		SrcMAC:       self.macAddr.Load().(net.HardwareAddr),
 		DstMAC:       hwAddrBcast,
 		EthernetType: layers.EthernetTypeIPv4,
 	}
@@ -45,15 +45,15 @@ func (self requestRenewState) do() iState {
 	request := new(dhcpv4.DhcpPacket)
 	request.ConstructWithPreAllocatedBuffer(buf, option.DHCPREQUEST)
 	request.SetXid(self.xid)
-	request.SetMacAddr([]byte(self.macAddr))
+	request.SetMacAddr([]byte(self.macAddr.Load().(net.HardwareAddr)))
 
-	if self.ipAddr == 0 {
+	if self.ipAddr.Load().(uint32) == 0 {
 		request.SetGiAddr(self.giaddr)
-		request.AddOption(generateOption82([]byte(self.macAddr)))
+		request.AddOption(generateOption82([]byte(self.macAddr.Load().(net.HardwareAddr))))
 	}
 
 	opt50 := new(option.Option50RequestedIpAddress)
-	opt50.Construct(self.ipAddr)
+	opt50.Construct(self.ipAddr.Load().(uint32))
 	request.AddOption(opt50)
 
 	opt54 := new(option.Option54DhcpServerIdentifier)
@@ -61,7 +61,7 @@ func (self requestRenewState) do() iState {
 	request.AddOption(opt54)
 
 	opt61 := new(option.Option61ClientIdentifier)
-	opt61.Construct(byte(1), self.macAddr)
+	opt61.Construct(byte(1), self.macAddr.Load().(net.HardwareAddr))
 	request.AddOption(opt61)
 
 	request.AddOption(generateOption90(self.login))
@@ -96,7 +96,7 @@ func (self requestRenewState) do() iState {
 				linkLayer := packet.Layer(layers.LayerTypeEthernet)
 
 				// Is it for me?
-				if !bytes.Equal([]byte(linkLayer.(*layers.Ethernet).DstMAC), self.macAddr) {
+				if !bytes.Equal([]byte(linkLayer.(*layers.Ethernet).DstMAC), self.macAddr.Load().(net.HardwareAddr)) {
 					// no, ignore this packet.
 					continue
 				}
