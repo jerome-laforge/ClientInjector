@@ -7,6 +7,8 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 
@@ -32,6 +34,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	go func() {
+		if err := http.ListenAndServe(":6060", nil); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	intFirstMacAddr := util.ConvertMax8byteToUint64([]byte(firstMacAddr))
 	macAddr := make([]byte, 8)
