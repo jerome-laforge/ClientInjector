@@ -76,6 +76,12 @@ type dhcpContext struct {
 	login                 string
 }
 
+func (self *dhcpContext) resetLease() {
+	self.ipAddr.Store(uint32(0))
+	self.serverIp = 0
+	self.xid = rand.Uint32()
+}
+
 func sentMsg(handle *pcap.Handle, layers ...gopacket.SerializableLayer) error {
 	// Set up buffer and options for serialization.
 	buf := gopacket.NewSerializeBuffer()

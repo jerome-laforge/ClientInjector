@@ -24,6 +24,8 @@ func (self discoverState) do() iState {
 		macAddr = self.macAddr.Load().(net.HardwareAddr)
 	)
 
+	self.dhcpContext.resetLease()
+
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
 		SrcMAC:       macAddr,
