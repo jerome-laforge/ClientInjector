@@ -18,7 +18,7 @@ type requestRebindState struct {
 }
 
 func (self *requestRebindState) do() iState {
-	in := self.packetsource.Packets()
+	in := self.packetSource.Packets()
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
 		SrcMAC:       self.macAddr,

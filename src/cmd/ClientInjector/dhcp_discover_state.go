@@ -19,7 +19,7 @@ type discoverState struct {
 }
 
 func (self discoverState) do() iState {
-	in := self.packetsource.Packets()
+	in := self.packetSource.Packets()
 
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
@@ -105,7 +105,7 @@ func (self discoverState) do() iState {
 					switch msgType {
 					case option.DHCPOFFER:
 						self.ipAddr = dp.GetYourIp()
-						self.ServerIp = dp.GetNextServerIp()
+						self.serverIp = dp.GetNextServerIp()
 						err := self.arpClient.sendGratuitousARP()
 						if err != nil {
 							fmt.Println(self.macAddr, "send gratuitousARP error", err)

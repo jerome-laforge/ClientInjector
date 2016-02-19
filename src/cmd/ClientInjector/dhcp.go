@@ -33,15 +33,15 @@ func CreateDhcpClient(ifaceName string, macAddr net.HardwareAddr, giaddr uint32,
 	d.ctx = dhcpContext{
 		xid:          rand.Uint32(),
 		handle:       handle,
-		packetsource: gopacket.NewPacketSource(handle, layers.LayerTypeEthernet),
+		packetSource: gopacket.NewPacketSource(handle, layers.LayerTypeEthernet),
 		arpClient:    arpClient,
 		ArpContext:   arpContext,
 		giaddr:       giaddr,
 		login:        login,
 	}
 
-	d.ctx.packetsource.Lazy = true
-	d.ctx.packetsource.NoCopy = true
+	d.ctx.packetSource.Lazy = true
+	d.ctx.packetSource.NoCopy = true
 
 	d.currentState = discoverState{
 		dhcpContext: d.ctx,
@@ -68,9 +68,9 @@ type iState interface {
 type dhcpContext struct {
 	*ArpContext
 	arpClient             ArpClient
-	xid, ServerIp, giaddr uint32
+	xid, serverIp, giaddr uint32
 	handle                *pcap.Handle
-	packetsource          *gopacket.PacketSource
+	packetSource          *gopacket.PacketSource
 	t1, t2, t0            time.Time
 	state                 iState
 	login                 string

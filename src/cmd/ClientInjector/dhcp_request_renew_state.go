@@ -19,7 +19,7 @@ type requestRenewState struct {
 
 func (self requestRenewState) do() iState {
 	// TODO unicast to self.ServerIp
-	in := self.packetsource.Packets()
+	in := self.packetSource.Packets()
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
 		SrcMAC:       self.macAddr,
@@ -57,7 +57,7 @@ func (self requestRenewState) do() iState {
 	request.AddOption(opt50)
 
 	opt54 := new(option.Option54DhcpServerIdentifier)
-	opt54.Construct(self.ServerIp)
+	opt54.Construct(self.serverIp)
 	request.AddOption(opt54)
 
 	opt61 := new(option.Option61ClientIdentifier)
