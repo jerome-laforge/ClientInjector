@@ -1,16 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"dhcpv4/util"
 	"encoding/binary"
 	"log"
 	"net"
 	"sync/atomic"
 
-	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcap"
 )
 
 var hwAddrBcast = net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
@@ -19,64 +16,39 @@ var hwAddrZero = net.HardwareAddr{0, 0, 0, 0, 0, 0}
 type ArpContext struct {
 	macAddr atomic.Value
 	ipAddr  atomic.Value
+	arpIn   chan *layers.ARP
 }
 
 type ArpClient interface {
 	sendGratuitousARP() error
 }
 
-func ConstructArpClient(ifaceName string, macAddr net.HardwareAddr) (ArpClient, *ArpContext, error) {
+func ConstructArpClient(macAddr net.HardwareAddr) (ArpClient, *ArpContext, error) {
 	c := new(arpClient)
-	h, err := getPcapHandleFor(ifaceName)
-	if err != nil {
-		return nil, nil, err
-	}
 
-	c.arpHandle = h
 	c.ctx.macAddr.Store(macAddr)
 	c.ctx.ipAddr.Store(uint32(0))
+	c.ctx.arpIn = make(chan *layers.ARP, 100)
 	go c.manageArpPacket()
 
 	return c, &c.ctx, nil
 }
 
 type arpClient struct {
-	arpHandle *pcap.Handle
-	ctx       ArpContext
+	ctx ArpContext
 }
 
 func (self *arpClient) manageArpPacket() {
 	var (
 		macAddr = self.ctx.macAddr.Load().(net.HardwareAddr)
-		src     = gopacket.NewPacketSource(self.arpHandle, layers.LayerTypeEthernet)
-		in      = src.Packets()
+		arpRcv  *layers.ARP
 	)
 
-	var packet gopacket.Packet
-	buf := gopacket.NewSerializeBuffer()
-	opts := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
-
 	for {
-		packet = <-in
+		arpRcv = <-self.ctx.arpIn
 		ipAddr := self.ctx.ipAddr.Load().(uint32)
-		arpLayer := packet.Layer(layers.LayerTypeARP)
-		if arpLayer == nil {
-			continue
-		}
-		arpRcv := arpLayer.(*layers.ARP)
-		// if arpRcv.Operation != layers.ARPRequest || !bytes.Equal(arpRcv.DstHwAddress, self.clientMAC) {
-		if arpRcv.Operation != layers.ARPRequest || util.Convert4byteToUint32(arpRcv.DstProtAddress) != ipAddr {
-			if arpRcv.Operation != RARPRequest || !bytes.Equal(arpRcv.DstHwAddress, []byte(macAddr)) {
-				continue
-			} else {
-				log.Println(macAddr, "Recieve RARP request")
-			}
-		} else {
-			log.Println(macAddr, "Recieve ARP request")
-		}
+
+		log.Println(macAddr, "Recieve ARP request for", util.ConvertUint32ToIpAddr(ipAddr))
 
 		eth := &layers.Ethernet{
 			SrcMAC:       macAddr,
@@ -84,29 +56,19 @@ func (self *arpClient) manageArpPacket() {
 			EthernetType: layers.EthernetTypeARP,
 		}
 
-		var op uint16
-		if arpRcv.Operation == layers.ARPRequest {
-			op = layers.ARPReply
-		} else { // arpRcv.Operation == RARPRequest
-			op = RARPReply
-		}
 		arp := &layers.ARP{
 			AddrType:          layers.LinkTypeEthernet,
 			Protocol:          layers.EthernetTypeIPv4,
 			HwAddressSize:     6,
 			ProtAddressSize:   4,
-			Operation:         op,
+			Operation:         layers.ARPReply,
 			SourceHwAddress:   []byte(macAddr),
 			SourceProtAddress: convertUint32ToByte(ipAddr),
 			DstHwAddress:      arpRcv.SourceHwAddress,
 			DstProtAddress:    arpRcv.SourceProtAddress,
 		}
 
-		gopacket.SerializeLayers(buf, opts, eth, arp)
-		if err := self.arpHandle.WritePacketData(buf.Bytes()); err != nil {
-			log.Println(macAddr, "ARP reply error", err)
-			continue
-		}
+		sentMsg(eth, arp)
 	}
 }
 
@@ -134,15 +96,9 @@ func (self *arpClient) sendGratuitousARP() error {
 		DstProtAddress:    convertUint32ToByte(ipAddr),
 	}
 
-	buf := gopacket.NewSerializeBuffer()
-	opts := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
-
-	gopacket.SerializeLayers(buf, opts, eth, arp)
 	log.Println(macAddr, "Send Gratuitous ARP", util.ConvertUint32ToIpAddr(ipAddr))
-	return self.arpHandle.WritePacketData(buf.Bytes())
+
+	return sentMsg(eth, arp)
 }
 
 func convertUint32ToByte(i uint32) []byte {

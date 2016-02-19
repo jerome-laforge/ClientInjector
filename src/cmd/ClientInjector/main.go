@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"dhcpv4/util"
 	"flag"
 	"fmt"
@@ -10,10 +11,52 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"sync"
 	"time"
 
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 )
+
+var (
+	globalHandle     *pcap.Handle
+	dhcpClientsByMac = make(map[uint64]*DhcpClient)
+	dhcRelay         = false
+	option90         = false
+	dhcpContextByIp  DhcpContextByIp
+)
+
+type DhcpContextByIp struct {
+	mutex sync.RWMutex
+	dMap  map[uint32]*dhcpContext
+}
+
+func (self *DhcpContextByIp) SetIp(ip uint32, dhcpContext *dhcpContext) {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
+
+	dhcpContextByIp.dMap[ip] = dhcpContext
+}
+
+func (self *DhcpContextByIp) ResetIp(ip uint32) {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
+
+	delete(dhcpContextByIp.dMap, ip)
+}
+
+func (self *DhcpContextByIp) Get(ip uint32) (*dhcpContext, bool) {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
+	dhcpCLient, ok := dhcpContextByIp.dMap[ip]
+	return dhcpCLient, ok
+}
+
+func init() {
+	dhcpContextByIp.dMap = make(map[uint32]*dhcpContext)
+}
 
 func main() {
 	var (
@@ -35,6 +78,10 @@ func main() {
 		panic(err)
 	}
 
+	if globalHandle, err = getPcapHandleFor(*paramIfaceName); err != nil {
+		panic(err)
+	}
+
 	go func() {
 		if err := http.ListenAndServe(":6060", nil); err != nil {
 			log.Println(err)
@@ -53,13 +100,19 @@ func main() {
 		macAddr := make([]byte, 8)
 		util.ConvertUint64To8byte(intFirstMacAddr+uint64(i), macAddr)
 		macAddr = macAddr[2:]
-		if _, err := CreateDhcpClient(*paramIfaceName, macAddr, giaddr, fmt.Sprintf(*paramLogin, i)); err != nil {
+
+		var dhcpClient *DhcpClient
+		if dhcpClient, err = CreateDhcpClient(macAddr, giaddr, fmt.Sprintf(*paramLogin, i)); err != nil {
 			log.Printf("interface %v: %v", *paramIfaceName, err)
 			os.Exit(1)
 		}
 
+		dhcpClientsByMac[intFirstMacAddr+uint64(i)] = dhcpClient
+
 		time.Sleep(*paramPacing)
 	}
+
+	go dispatchIncomingPacket()
 
 	select {}
 }
@@ -98,6 +151,83 @@ func getPcapHandleFor(ifaceName string) (*pcap.Handle, error) {
 	}
 
 	// Open up a pcap handle for packet reads/writes.
-	return pcap.OpenLive(iface.Name, 512, true, pcap.BlockForever)
+	return pcap.OpenLive(iface.Name, 1024, true, pcap.BlockForever)
 
+}
+
+func dispatchIncomingPacket() {
+	var (
+		packetSource = gopacket.NewPacketSource(globalHandle, layers.LayerTypeEthernet)
+		in           = packetSource.Packets()
+	)
+
+	for {
+		packet := <-in
+		linkLayer := packet.Layer(layers.LayerTypeEthernet)
+
+		if linkLayer == nil {
+			continue
+		}
+
+		// udp layer
+		if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
+			if udpLayer.(*layers.UDP).SrcPort != 67 {
+				continue
+			}
+
+			appLayer := packet.ApplicationLayer()
+			if appLayer == nil {
+				continue
+			}
+
+			macAddr := util.ConvertMax8byteToUint64([]byte(linkLayer.(*layers.Ethernet).DstMAC))
+
+			if dhcpClient, ok := dhcpClientsByMac[macAddr]; ok {
+				dhcpClient.ctx.dhcpIn <- appLayer.Payload()
+			}
+
+			// next packet
+			continue
+		}
+
+		// arp layer
+		if layer := packet.Layer(layers.LayerTypeARP); layer != nil {
+			arpLayer := layer.(*layers.ARP)
+			if arpLayer.Operation != layers.ARPRequest {
+				continue
+			}
+
+			if !bytes.Equal([]byte(arpLayer.DstHwAddress), []byte(hwAddrBcast)) {
+				continue
+			}
+
+			if dhcpClient, ok := dhcpContextByIp.Get(util.Convert4byteToUint32(arpLayer.DstProtAddress)); ok {
+				dhcpClient.arpIn <- arpLayer
+			}
+
+			// next packet
+			continue
+		}
+
+	}
+
+}
+
+func sentMsg(layers ...gopacket.SerializableLayer) error {
+	// Set up buffer and options for serialization.
+	buf := gopacket.NewSerializeBuffer()
+	opts := gopacket.SerializeOptions{
+		FixLengths:       true,
+		ComputeChecksums: true,
+	}
+
+	if err := gopacket.SerializeLayers(buf, opts, layers...); err != nil {
+		return err
+	}
+
+	if err := globalHandle.WritePacketData(buf.Bytes()); err != nil {
+		return err
+	}
+
+	return nil
 }

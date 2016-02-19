@@ -7,10 +7,6 @@ import (
 	"math/rand"
 	"net"
 	"time"
-
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcap"
 )
 
 type DhcpClient struct {
@@ -18,30 +14,22 @@ type DhcpClient struct {
 	ctx          dhcpContext
 }
 
-func CreateDhcpClient(ifaceName string, macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpClient, error) {
-	handle, err := getPcapHandleFor(ifaceName)
-	if err != nil {
-		return nil, err
-	}
+func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpClient, error) {
 
 	d := new(DhcpClient)
 
-	arpClient, arpContext, err := ConstructArpClient(ifaceName, macAddr)
+	arpClient, arpContext, err := ConstructArpClient(macAddr)
 	if err != nil {
 		return nil, err
 	}
 	d.ctx = dhcpContext{
-		xid:          rand.Uint32(),
-		handle:       handle,
-		packetSource: gopacket.NewPacketSource(handle, layers.LayerTypeEthernet),
-		arpClient:    arpClient,
-		ArpContext:   arpContext,
-		giaddr:       giaddr,
-		login:        login,
+		xid:        rand.Uint32(),
+		dhcpIn:     make(chan []byte, 100),
+		arpClient:  arpClient,
+		ArpContext: arpContext,
+		giaddr:     giaddr,
+		login:      login,
 	}
-
-	d.ctx.packetSource.Lazy = true
-	d.ctx.packetSource.NoCopy = true
 
 	d.currentState = discoverState{
 		dhcpContext: d.ctx,
@@ -69,36 +57,20 @@ type dhcpContext struct {
 	*ArpContext
 	arpClient             ArpClient
 	xid, serverIp, giaddr uint32
-	handle                *pcap.Handle
-	packetSource          *gopacket.PacketSource
+	dhcpIn                chan []byte
 	t1, t2, t0            time.Time
 	state                 iState
 	login                 string
 }
 
 func (self *dhcpContext) resetLease() {
+	if ipAddr := self.ipAddr.Load().(uint32); ipAddr != 0 {
+		dhcpContextByIp.ResetIp(ipAddr)
+	}
+
 	self.ipAddr.Store(uint32(0))
 	self.serverIp = 0
 	self.xid = rand.Uint32()
-}
-
-func sentMsg(handle *pcap.Handle, layers ...gopacket.SerializableLayer) error {
-	// Set up buffer and options for serialization.
-	buf := gopacket.NewSerializeBuffer()
-	opts := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
-
-	if err := gopacket.SerializeLayers(buf, opts, layers...); err != nil {
-		return err
-	}
-
-	if err := handle.WritePacketData(buf.Bytes()); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func extractAllLeaseTime(dp *dhcpv4.DhcpPacket) (t0, t1, t2 time.Time) {

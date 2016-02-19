@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"dhcpv4"
 	"dhcpv4/option"
 	"fmt"
@@ -9,7 +8,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 )
 
@@ -19,7 +17,6 @@ type requestRebindState struct {
 
 func (self *requestRebindState) do() iState {
 	var (
-		in      = self.packetSource.Packets()
 		macAddr = self.macAddr.Load().(net.HardwareAddr)
 		ipAddr  = self.ipAddr.Load().(uint32)
 	)
@@ -50,7 +47,6 @@ func (self *requestRebindState) do() iState {
 	request.ConstructWithPreAllocatedBuffer(buf, option.DHCPREQUEST)
 	request.SetXid(self.xid)
 	request.SetMacAddr([]byte(macAddr))
-	request.SetGiAddr(self.giaddr)
 
 	opt50 := new(option.Option50RequestedIpAddress)
 	opt50.Construct(ipAddr)
@@ -60,8 +56,14 @@ func (self *requestRebindState) do() iState {
 	opt61.Construct(byte(1), macAddr)
 	request.AddOption(opt61)
 
-	request.AddOption(generateOption82([]byte(macAddr)))
-	request.AddOption(generateOption90(self.login))
+	if dhcRelay {
+		request.SetGiAddr(self.giaddr)
+		request.AddOption(generateOption82([]byte(macAddr)))
+	}
+
+	if option90 {
+		request.AddOption(generateOption90(self.login))
+	}
 
 	bootp := &PayloadLayer{
 		contents: request.Raw,
@@ -69,13 +71,13 @@ func (self *requestRebindState) do() iState {
 
 	for {
 		// send request
-		for err := sentMsg(self.handle, eth, ipv4, udp, bootp); err != nil; {
+		for err := sentMsg(eth, ipv4, udp, bootp); err != nil; {
 			log.Println(macAddr, "error sending request", err)
 			time.Sleep(2 * time.Second)
 		}
 
 		var (
-			packet   gopacket.Packet
+			payload  []byte
 			timeout  time.Duration
 			deadline = time.Now().Add(2 * time.Second)
 		)
@@ -84,25 +86,12 @@ func (self *requestRebindState) do() iState {
 			timeout = deadline.Sub(time.Now())
 			select {
 			case <-time.After(timeout):
-				log.Println(macAddr, "timeout")
+				log.Println(macAddr, "REBIND timeout")
 				return timeoutRebindState{
 					dhcpContext: self.dhcpContext,
 				}
-			case packet = <-in:
-				linkLayer := packet.Layer(layers.LayerTypeEthernet)
-
-				// Is it for me?
-				if !bytes.Equal([]byte(linkLayer.(*layers.Ethernet).DstMAC), macAddr) {
-					// no, ignore this packet.
-					continue
-				}
-
-				appLayer := packet.ApplicationLayer()
-				if appLayer == nil {
-					continue
-				}
-
-				dp, err := dhcpv4.Parse(appLayer.Payload())
+			case payload = <-self.dhcpIn:
+				dp, err := dhcpv4.Parse(payload)
 				if err != nil {
 					// it is not DHCP packet...
 					continue
