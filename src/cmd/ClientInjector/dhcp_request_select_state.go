@@ -18,8 +18,11 @@ type requestSelectState struct {
 }
 
 func (self requestSelectState) do() iState {
-	in := self.packetSource.Packets()
-	macAddr := self.macAddr.Load().(net.HardwareAddr)
+	var (
+		in      = self.packetSource.Packets()
+		macAddr = self.macAddr.Load().(net.HardwareAddr)
+		ipAddr  = self.ipAddr.Load().(uint32)
+	)
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
 		SrcMAC:       macAddr,
@@ -49,7 +52,7 @@ func (self requestSelectState) do() iState {
 	request.SetGiAddr(self.giaddr)
 
 	opt50 := new(option.Option50RequestedIpAddress)
-	opt50.Construct(self.ipAddr.Load().(uint32))
+	opt50.Construct(ipAddr)
 	request.AddOption(opt50)
 
 	opt54 := new(option.Option54DhcpServerIdentifier)
@@ -61,7 +64,6 @@ func (self requestSelectState) do() iState {
 	request.AddOption(opt61)
 
 	request.AddOption(generateOption82([]byte(macAddr)))
-
 	request.AddOption(generateOption90(self.login))
 
 	bootp := &PayloadLayer{

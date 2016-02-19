@@ -18,8 +18,11 @@ type requestRebindState struct {
 }
 
 func (self *requestRebindState) do() iState {
-	in := self.packetSource.Packets()
-	macAddr := self.macAddr.Load().(net.HardwareAddr)
+	var (
+		in      = self.packetSource.Packets()
+		macAddr = self.macAddr.Load().(net.HardwareAddr)
+		ipAddr  = self.ipAddr.Load().(uint32)
+	)
 
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
@@ -50,7 +53,7 @@ func (self *requestRebindState) do() iState {
 	request.SetGiAddr(self.giaddr)
 
 	opt50 := new(option.Option50RequestedIpAddress)
-	opt50.Construct(self.ipAddr.Load().(uint32))
+	opt50.Construct(ipAddr)
 	request.AddOption(opt50)
 
 	opt61 := new(option.Option61ClientIdentifier)

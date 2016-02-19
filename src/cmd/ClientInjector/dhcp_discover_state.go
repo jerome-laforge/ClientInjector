@@ -19,8 +19,10 @@ type discoverState struct {
 }
 
 func (self discoverState) do() iState {
-	in := self.packetSource.Packets()
-	macAddr := self.macAddr.Load().(net.HardwareAddr)
+	var (
+		in      = self.packetSource.Packets()
+		macAddr = self.macAddr.Load().(net.HardwareAddr)
+	)
 
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
