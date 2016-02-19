@@ -5,14 +5,14 @@ import (
 	"dhcpv4/util"
 )
 
-const HEADER_LEN_OPT_90 = 12
+const HEADER_LEN_OPT_90 = 11
 
 type Option90Authentificiation struct {
 	rawOpt RawOption
 }
 
 func (this *Option90Authentificiation) Construct(data []byte) error {
-	if len(data) < HEADER_LEN_OPT_90 {
+	if len(data) <= HEADER_LEN_OPT_90 {
 		return dherrors.Opt90DataInvalidLen
 	}
 	this.rawOpt.Construct(this.GetNum(), byte(len(data)))
@@ -50,9 +50,9 @@ func (this Option90Authentificiation) GetRdm() byte {
 }
 
 func (this Option90Authentificiation) GetReplayDetection() uint64 {
-	return util.Convert8byteToUint64(this.rawOpt.GetValue()[3:11])
+	return util.Convert8byteToUint64(this.rawOpt.GetValue()[3:HEADER_LEN_OPT_90])
 }
 
 func (this Option90Authentificiation) GetAuthenticationInformation() []byte {
-	return this.rawOpt.GetValue()[11:]
+	return this.rawOpt.GetValue()[HEADER_LEN_OPT_90:]
 }
