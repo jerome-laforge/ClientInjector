@@ -140,11 +140,7 @@ func (dp DhcpPacket) SetHops(hops byte) {
 	dp.Raw[3] = hops
 }
 
-func (dp DhcpPacket) GetXid() uint32 {
-	return util.Convert4byteToUint32(dp.Raw[4:8])
-}
-
-func (dp DhcpPacket) GetXidRaw() []byte {
+func (dp DhcpPacket) GetXid() []byte {
 	return dp.Raw[4:8:8]
 }
 
