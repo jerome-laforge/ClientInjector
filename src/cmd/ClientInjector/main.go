@@ -22,8 +22,8 @@ import (
 var (
 	globalHandle     *pcap.Handle
 	dhcpClientsByMac = make(map[uint64]*DhcpClient)
-	dhcRelay         = false
-	option90         = false
+	dhcRelay         = true
+	option90         = true
 	dhcpContextByIp  DhcpContextByIp
 )
 
@@ -66,8 +66,13 @@ func main() {
 		paramNbDhcpClient = flag.Uint("nb_dhcp", 1, "Define number of dhcp client")
 		paramLogin        = flag.String("login", "%08d", "Define what is use into option90. fmt.Printf and index of dhcp client with range [0, nb_dhcp[ is used.")
 		paramPacing       = flag.Duration("pacing", 100*time.Millisecond, "Define the pacing for launch new dhcp client")
+		paramNoOpt90      = flag.Bool("no90", false, "No option 90")
+		paramNoRelay      = flag.Bool("noRelay", false, "No relay")
 	)
 	flag.Parse()
+
+	dhcRelay = !*paramNoRelay
+	option90 = !*paramNoOpt90
 
 	firstMacAddr, err := net.ParseMAC(*paramFirstMacAddr)
 	if err != nil {
