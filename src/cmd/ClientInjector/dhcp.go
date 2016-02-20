@@ -133,11 +133,8 @@ func generateOption82(macAddr net.HardwareAddr) *option.Option82DhcpAgentOption 
 
 func generateOption90(login string) *option.Option90Authentificiation {
 	opt90 := new(option.Option90Authentificiation)
-
 	buf := make([]byte, option.HEADER_LEN_OPT_90+len(login))
-
 	copy(buf[option.HEADER_LEN_OPT_90:], []byte(login))
-
 	opt90.Construct(buf)
 
 	return opt90
