@@ -104,7 +104,7 @@ func (self requestSelectState) do() iState {
 					expectedXid := make([]byte, 4)
 					util.ConvertUint32To4byte(self.dhcpContext.xid, expectedXid)
 
-					log.Println(macAddr, "SELECT: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(expectedXid), hex.EncodeToString(dp.GetXid()))
+					log.Println(macAddr, fmt.Sprintf("SELECT: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(expectedXid), hex.EncodeToString(dp.GetXid())))
 					continue
 				}
 

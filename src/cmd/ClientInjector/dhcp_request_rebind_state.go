@@ -89,6 +89,7 @@ func (self *requestRebindState) do() iState {
 			select {
 			case <-time.After(timeout):
 				log.Println(macAddr, "REBIND: timeout")
+
 				return timeoutRebindState{
 					dhcpContext: self.dhcpContext,
 				}
