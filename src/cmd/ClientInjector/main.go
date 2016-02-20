@@ -171,7 +171,7 @@ func dispatchIncomingPacket() {
 
 		// udp layer
 		if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
-			if udpLayer.(*layers.UDP).SrcPort != 67 {
+			if udpLayer.(*layers.UDP).SrcPort != bootps {
 				continue
 			}
 

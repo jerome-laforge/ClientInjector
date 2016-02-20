@@ -35,8 +35,8 @@ func (self *requestRebindState) do() iState {
 		DstIP:    net.IPv4bcast,
 	}
 	udp := &layers.UDP{
-		SrcPort: 68,
-		DstPort: 67,
+		SrcPort: bootpc,
+		DstPort: bootps,
 	}
 	udp.SetNetworkLayerForChecksum(ipv4)
 
