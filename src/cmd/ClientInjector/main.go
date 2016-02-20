@@ -112,7 +112,15 @@ func main() {
 		time.Sleep(*paramPacing)
 	}
 
-	dispatchIncomingPacket()
+	go dispatchIncomingPacket()
+
+	// Launch the DhcpClient (DORA and so on)
+	for _, dhcpClient := range dhcpClientsByMac {
+		dhcpClient.run()
+	}
+
+	// Block main goroutine
+	select {}
 }
 
 func getPcapHandleFor(ifaceName string) (*pcap.Handle, error) {

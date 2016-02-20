@@ -14,6 +14,15 @@ type DhcpClient struct {
 	ctx          dhcpContext
 }
 
+func (self *DhcpClient) run() {
+	go func() {
+		for {
+			// Let's do the job forever...
+			self.currentState = self.currentState.do()
+		}
+	}()
+}
+
 func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpClient, error) {
 
 	d := new(DhcpClient)
@@ -38,13 +47,6 @@ func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*D
 	if err != nil {
 		return nil, err
 	}
-
-	go func() {
-		for {
-			// Let's do the job forever...
-			d.currentState = d.currentState.do()
-		}
-	}()
 
 	return d, nil
 }
