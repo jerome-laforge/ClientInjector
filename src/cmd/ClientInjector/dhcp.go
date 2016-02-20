@@ -3,6 +3,7 @@ package main
 import (
 	"dhcpv4"
 	"dhcpv4/option"
+	"dhcpv4/util"
 	"encoding/hex"
 	"math/rand"
 	"net"
@@ -21,6 +22,14 @@ func (self *DhcpClient) run() {
 			self.currentState = self.currentState.do()
 		}
 	}()
+}
+
+func (self DhcpClient) String() string {
+	macAddr := self.ctx.macAddr.Load().(net.HardwareAddr)
+	xid := make([]byte, 4)
+	util.ConvertUint32To4byte(self.ctx.xid, xid)
+
+	return "mac: " + macAddr.String() + " xid: 0x" + hex.EncodeToString(xid)
 }
 
 func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpClient, error) {
@@ -72,7 +81,6 @@ func (self *dhcpContext) resetLease() {
 
 	self.ipAddr.Store(uint32(0))
 	self.serverIp = 0
-	self.xid = rand.Uint32()
 }
 
 func extractAllLeaseTime(dp *dhcpv4.DhcpPacket) (t0, t1, t2 time.Time) {

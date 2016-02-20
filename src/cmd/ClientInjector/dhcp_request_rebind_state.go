@@ -100,9 +100,9 @@ func (self *requestRebindState) do() iState {
 					continue
 				}
 
-				if self.dhcpContext.xid != util.Convert4byteToUint32(dp.GetXid()) {
+				if self.xid != util.Convert4byteToUint32(dp.GetXid()) {
 					expectedXid := make([]byte, 4)
-					util.ConvertUint32To4byte(self.dhcpContext.xid, expectedXid)
+					util.ConvertUint32To4byte(self.xid, expectedXid)
 
 					log.Println(macAddr, fmt.Sprintf("REBIND: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(expectedXid), hex.EncodeToString(dp.GetXid())))
 					continue

@@ -96,6 +96,8 @@ func main() {
 	log.Println("Last  : Mac Addr", net.HardwareAddr(macAddr[2:]), " - login", fmt.Sprintf(*paramLogin, *paramNbDhcpClient-1))
 
 	rand.Seed(time.Now().UTC().UnixNano())
+
+	// Create each DhcpClient
 	for i := uint(0); i < *paramNbDhcpClient; i++ {
 		macAddr := make([]byte, 8)
 		util.ConvertUint64To8byte(intFirstMacAddr+uint64(i), macAddr)
@@ -107,14 +109,16 @@ func main() {
 			os.Exit(1)
 		}
 
+		log.Println("DhcpClient created:", dhcpClient)
 		dhcpClientsByMac[intFirstMacAddr+uint64(i)] = dhcpClient
 
 		time.Sleep(*paramPacing)
 	}
 
+	// Listen all incoming packets
 	go dispatchIncomingPacket()
 
-	// Launch the DhcpClient (DORA and so on)
+	// Launch each DhcpClient (DORA and so on)
 	for _, dhcpClient := range dhcpClientsByMac {
 		dhcpClient.run()
 	}
