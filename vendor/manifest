@@ -4,7 +4,7 @@
 		{
 			"importpath": "github.com/google/gopacket",
 			"repository": "https://github.com/google/gopacket",
-			"revision": "cdd21628caecd1489c9204a8596414467fd6d629",
+			"revision": "e5560fd61189f831df0e6af1259957b83904451a",
 			"branch": "master"
 		}
 	]
