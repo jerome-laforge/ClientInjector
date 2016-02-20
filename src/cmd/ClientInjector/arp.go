@@ -106,8 +106,3 @@ func convertUint32ToByte(i uint32) []byte {
 	binary.BigEndian.PutUint32(b, i)
 	return b
 }
-
-const (
-	RARPRequest = 3
-	RARPReply   = 4
-)
