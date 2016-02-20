@@ -4,7 +4,7 @@ import "sync"
 
 var leakyBuffer = sync.Pool{
 	New: func() interface{} {
-		return make([]byte, 1500)
+		return make([]byte, mtu)
 	},
 }
 
