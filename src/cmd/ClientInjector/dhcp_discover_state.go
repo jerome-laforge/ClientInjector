@@ -4,13 +4,12 @@ import (
 	"dhcpv4"
 	"dhcpv4/option"
 	"dhcpv4/util"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"math"
 	"net"
 	"time"
-
-	"encoding/hex"
 
 	"github.com/google/gopacket/layers"
 )
