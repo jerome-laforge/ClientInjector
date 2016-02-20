@@ -3,6 +3,8 @@ package main
 import (
 	"dhcpv4"
 	"dhcpv4/option"
+	"dhcpv4/util"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net"
@@ -89,7 +91,7 @@ func (self requestSelectState) do() iState {
 			timeout = deadline.Sub(time.Now())
 			select {
 			case <-time.After(timeout):
-				log.Println(macAddr, "SELECT timeout")
+				log.Println(macAddr, "SELECT: timeout")
 				goto TIMEOUT
 			case payload = <-self.dhcpIn:
 				dp, err := dhcpv4.Parse(payload)
@@ -97,6 +99,15 @@ func (self requestSelectState) do() iState {
 					// it is not DHCP packet...
 					continue
 				}
+
+				if self.dhcpContext.xid != util.Convert4byteToUint32(dp.GetXid()) {
+					expectedXid := make([]byte, 4)
+					util.ConvertUint32To4byte(self.dhcpContext.xid, expectedXid)
+
+					log.Println(macAddr, "SELECT: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(expectedXid), hex.EncodeToString(dp.GetXid()))
+					continue
+				}
+
 				if msgType, err := dp.GetTypeMessage(); err == nil {
 					switch msgType {
 					case option.DHCPACK:
@@ -107,16 +118,16 @@ func (self requestSelectState) do() iState {
 							dhcpContext: self.dhcpContext,
 						}
 					case option.DHCPNAK:
-						log.Println(macAddr, "Receive NAK")
+						log.Println(macAddr, "SELECT: receive NAK")
 						return discoverState{
 							dhcpContext: self.dhcpContext,
 						}
 					default:
-						log.Println(macAddr, fmt.Sprintf("Unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
+						log.Println(macAddr, fmt.Sprintf("SELECT: unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
 						continue
 					}
 				} else {
-					log.Println(macAddr, "Option 53 is missing")
+					log.Println(macAddr, "SELECT: option 53 is missing")
 					continue
 				}
 			}

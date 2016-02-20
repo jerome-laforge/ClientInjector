@@ -3,11 +3,14 @@ package main
 import (
 	"dhcpv4"
 	"dhcpv4/option"
+	"dhcpv4/util"
 	"fmt"
 	"log"
 	"math"
 	"net"
 	"time"
+
+	"encoding/hex"
 
 	"github.com/google/gopacket/layers"
 )
@@ -84,12 +87,20 @@ func (self discoverState) do() iState {
 			timeout = deadline.Sub(time.Now())
 			select {
 			case <-time.After(timeout):
-				log.Println(macAddr, "DISCOVER timeout", retries)
+				log.Println(macAddr, "DISCOVER: timeout", retries)
 				goto TIMEOUT
 			case payload = <-self.dhcpIn:
 				dp, err := dhcpv4.Parse(payload)
 				if err != nil {
 					// it is not DHCP packet...
+					continue
+				}
+
+				if self.dhcpContext.xid != util.Convert4byteToUint32(dp.GetXid()) {
+					expectedXid := make([]byte, 4)
+					util.ConvertUint32To4byte(self.dhcpContext.xid, expectedXid)
+
+					log.Println(macAddr, fmt.Sprintf("DISCOVER: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(expectedXid), hex.EncodeToString(dp.GetXid())))
 					continue
 				}
 
@@ -109,11 +120,11 @@ func (self discoverState) do() iState {
 							dhcpContext: self.dhcpContext,
 						}
 					default:
-						log.Println(macAddr, fmt.Sprintf("Unexcpected message [Excpected: %s] [Actual: %s]", option.DHCPDISCOVER, msgType))
+						log.Println(macAddr, fmt.Sprintf("DISCOVER: Unexcpected message [Excpected: %s] [Actual: %s]", option.DHCPDISCOVER, msgType))
 						continue
 					}
 				} else {
-					log.Println(macAddr, "Option 53 is missing")
+					log.Println(macAddr, "DISCOVER: Option 53 is missing")
 					continue
 				}
 			}

@@ -3,6 +3,8 @@ package main
 import (
 	"dhcpv4"
 	"dhcpv4/option"
+	"dhcpv4/util"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net"
@@ -90,7 +92,7 @@ func (self requestRenewState) do() iState {
 			timeout = deadline.Sub(time.Now())
 			select {
 			case <-time.After(timeout):
-				log.Println(macAddr, "RENEW timeout")
+				log.Println(macAddr, "RENEW: timeout")
 
 				return timeoutRenewState{
 					dhcpContext: self.dhcpContext,
@@ -101,6 +103,15 @@ func (self requestRenewState) do() iState {
 					// it is not DHCP packet...
 					continue
 				}
+
+				if self.dhcpContext.xid != util.Convert4byteToUint32(dp.GetXid()) {
+					expectedXid := make([]byte, 4)
+					util.ConvertUint32To4byte(self.dhcpContext.xid, expectedXid)
+
+					log.Println(macAddr, fmt.Sprintf("RENEW: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(expectedXid), hex.EncodeToString(dp.GetXid())))
+					continue
+				}
+
 				if msgType, err := dp.GetTypeMessage(); err == nil {
 					switch msgType {
 					case option.DHCPACK:
@@ -110,16 +121,16 @@ func (self requestRenewState) do() iState {
 							dhcpContext: self.dhcpContext,
 						}
 					case option.DHCPNAK:
-						log.Println(macAddr, "Receive NAK")
+						log.Println(macAddr, "RENEW: receive NAK")
 						return discoverState{
 							dhcpContext: self.dhcpContext,
 						}
 					default:
-						log.Println(macAddr, fmt.Sprintf("Unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
+						log.Println(macAddr, fmt.Sprintf("RENEW: unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
 						continue
 					}
 				} else {
-					log.Println(macAddr, "Option 53 is missing")
+					log.Println(macAddr, "RENEW: option 53 is missing")
 					continue
 				}
 			}
