@@ -124,34 +124,15 @@ func getPcapHandleFor(ifaceName string) (*pcap.Handle, error) {
 		return nil, err
 	}
 
-	// We just look for IPv4 addresses, so try to find if the interface has one.
-	var addr *net.IPNet
-	if addrs, err := iface.Addrs(); err != nil {
+	// Open up a pcap handle for packet reads/writes.
+	handle, err := pcap.OpenLive(iface.Name, mtu, true, pcap.BlockForever)
+	if err != nil {
 		return nil, err
-	} else {
-		for _, a := range addrs {
-			if ipnet, ok := a.(*net.IPNet); ok {
-				if ip4 := ipnet.IP.To4(); ip4 != nil {
-					addr = &net.IPNet{
-						IP:   ip4,
-						Mask: ipnet.Mask[len(ipnet.Mask)-4:],
-					}
-					break
-				}
-			}
-		}
-	}
-	// Sanity-check that the interface has a good address.
-	if addr == nil {
-		return nil, fmt.Errorf("no good IP network found")
-	} else if addr.IP[0] == 127 {
-		return nil, fmt.Errorf("skipping localhost")
-	} else if addr.Mask[0] != 0xff || addr.Mask[1] != 0xff {
-		return nil, fmt.Errorf("mask means network is too large")
 	}
 
-	// Open up a pcap handle for packet reads/writes.
-	return pcap.OpenLive(iface.Name, mtu, true, pcap.BlockForever)
+	handle.SetBPFFilter(fmt.Sprintf("arp or port %v", bootps))
+
+	return handle, nil
 
 }
 
