@@ -112,9 +112,7 @@ func main() {
 		time.Sleep(*paramPacing)
 	}
 
-	go dispatchIncomingPacket()
-
-	select {}
+	dispatchIncomingPacket()
 }
 
 func getPcapHandleFor(ifaceName string) (*pcap.Handle, error) {
