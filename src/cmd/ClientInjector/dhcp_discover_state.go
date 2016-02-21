@@ -93,7 +93,8 @@ func (self discoverState) do() iState {
 					continue
 				}
 
-				if self.dhcpContext.xid != util.Convert4byteToUint32(dp.GetXid()) {
+				if self.xid != util.Convert4byteToUint32(dp.GetXid()) {
+					// bug of DHCP Server ?
 					expectedXid := make([]byte, 4)
 					util.ConvertUint32To4byte(self.dhcpContext.xid, expectedXid)
 

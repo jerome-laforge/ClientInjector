@@ -98,6 +98,7 @@ func (self *requestRebindState) do() iState {
 				}
 
 				if self.xid != util.Convert4byteToUint32(dp.GetXid()) {
+					// bug of DHCP Server ?
 					expectedXid := make([]byte, 4)
 					util.ConvertUint32To4byte(self.xid, expectedXid)
 
