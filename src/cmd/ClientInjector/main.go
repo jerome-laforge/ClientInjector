@@ -116,8 +116,6 @@ func main() {
 
 		log.Println("DhcpClient created:", dhcpClient)
 		dhcpClientsByMac[intFirstMacAddr+uint64(i)] = dhcpClient
-
-		time.Sleep(*paramPacing)
 	}
 
 	// Listen all incoming packets
@@ -126,6 +124,7 @@ func main() {
 	// Launch each DhcpClient (DORA and so on)
 	for _, dhcpClient := range dhcpClientsByMac {
 		dhcpClient.run()
+		time.Sleep(*paramPacing)
 	}
 
 	// Block main goroutine
