@@ -75,7 +75,7 @@ func (self requestRenewState) do() iState {
 	for {
 		// send request
 		for err := sentMsg(eth, ipv4, udp, bootp); err != nil; {
-			log.Println(self.macAddr, "error sending request", err)
+			log.Println(self.macAddr, "RENEW: error sending request", err)
 			time.Sleep(2 * time.Second)
 		}
 

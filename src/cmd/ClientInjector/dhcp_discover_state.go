@@ -67,7 +67,7 @@ func (self discoverState) do() iState {
 	for {
 		// send discover
 		for err := sentMsg(eth, ipv4, udp, bootp); err != nil; {
-			log.Println(self.macAddr, "error sending discover", err)
+			log.Println(self.macAddr, "DISCOVER: error sending discover", err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
