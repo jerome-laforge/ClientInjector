@@ -158,14 +158,11 @@ func dispatchIncomingPacket() {
 
 	for {
 		packet := <-in
-		linkLayer := packet.Layer(layers.LayerTypeEthernet)
 
-		if linkLayer == nil {
-			continue
-		}
-
-		// udp layer
+		// DHCP
 		if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
+			linkLayer := packet.Layer(layers.LayerTypeEthernet)
+
 			if udpLayer.(*layers.UDP).SrcPort != bootps {
 				continue
 			}
@@ -185,7 +182,7 @@ func dispatchIncomingPacket() {
 			continue
 		}
 
-		// arp layer
+		// ARP
 		if layer := packet.Layer(layers.LayerTypeARP); layer != nil {
 			arpLayer := layer.(*layers.ARP)
 			if arpLayer.Operation != layers.ARPRequest {
