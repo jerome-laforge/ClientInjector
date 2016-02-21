@@ -78,6 +78,7 @@ func (self *arpClient) sendGratuitousARP() error {
 		EthernetType: layers.EthernetTypeARP,
 	}
 
+	ipAddrByteArray := convertUint32ToByte(ipAddr)
 	arp := &layers.ARP{
 		AddrType:          layers.LinkTypeEthernet,
 		Protocol:          layers.EthernetTypeIPv4,
@@ -85,9 +86,9 @@ func (self *arpClient) sendGratuitousARP() error {
 		ProtAddressSize:   4,
 		Operation:         layers.ARPRequest,
 		SourceHwAddress:   self.ctx.macAddr,
-		SourceProtAddress: convertUint32ToByte(ipAddr),
+		SourceProtAddress: ipAddrByteArray,
 		DstHwAddress:      hwAddrZero,
-		DstProtAddress:    convertUint32ToByte(ipAddr),
+		DstProtAddress:    ipAddrByteArray,
 	}
 
 	log.Println(self.ctx.macAddr, "Send Gratuitous ARP", util.ConvertUint32ToIpAddr(ipAddr))
