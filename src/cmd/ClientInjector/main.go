@@ -105,6 +105,7 @@ func main() {
 	for i := uint(0); i < *paramNbDhcpClient; i++ {
 		macAddr := make([]byte, 8)
 		util.ConvertUint64To8byte(intFirstMacAddr+uint64(i), macAddr)
+		// Reduce the byte array, as mac addr is only on 6 bytes with BigEndian format
 		macAddr = macAddr[2:]
 
 		var dhcpClient *DhcpClient
