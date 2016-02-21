@@ -62,6 +62,8 @@ func (self timeoutRebindState) do() iState {
 	)
 
 	if timeout < time.Minute {
+		// lease will be expired because DHCP Clint didn't receive ACK for all its REQUEST.
+		// DHCP Client will sent DISCOVER
 		timeout = self.t0.Sub(now)
 		nextState = &discoverState{
 			dhcpContext: self.dhcpContext,
