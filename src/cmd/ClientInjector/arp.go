@@ -60,7 +60,7 @@ func (self *arpClient) manageArpPacket() {
 			ProtAddressSize:   4,
 			Operation:         layers.ARPReply,
 			SourceHwAddress:   self.ctx.macAddr,
-			SourceProtAddress: convertUint32ToByte(ipAddr),
+			SourceProtAddress: convertUint32ToBytes(ipAddr),
 			DstHwAddress:      arpRcv.SourceHwAddress,
 			DstProtAddress:    arpRcv.SourceProtAddress,
 		}
@@ -78,7 +78,7 @@ func (self *arpClient) sendGratuitousARP() error {
 		EthernetType: layers.EthernetTypeARP,
 	}
 
-	ipAddrByteArray := convertUint32ToByte(ipAddr)
+	ipAddrByteArray := convertUint32ToBytes(ipAddr)
 	arp := &layers.ARP{
 		AddrType:          layers.LinkTypeEthernet,
 		Protocol:          layers.EthernetTypeIPv4,
@@ -96,7 +96,7 @@ func (self *arpClient) sendGratuitousARP() error {
 	return sentMsg(eth, arp)
 }
 
-func convertUint32ToByte(i uint32) []byte {
+func convertUint32ToBytes(i uint32) []byte {
 	b := make([]byte, 4)
 	binary.BigEndian.PutUint32(b, i)
 	return b
