@@ -25,10 +25,7 @@ func (self *DhcpClient) run() {
 }
 
 func (self DhcpClient) String() string {
-	xid := make([]byte, 4)
-	util.ConvertUint32To4byte(self.ctx.xid, xid)
-
-	return "mac: " + self.ctx.macAddr.String() + " xid: 0x" + hex.EncodeToString(xid)
+	return "mac: " + self.ctx.macAddr.String() + " xid: 0x" + hex.EncodeToString(self.ctx.xid)
 }
 
 func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpClient, error) {
@@ -39,8 +36,10 @@ func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*D
 	if err != nil {
 		return nil, err
 	}
+	xid := make([]byte, 4)
+	util.ConvertUint32To4byte(rand.Uint32(), xid)
 	d.ctx = dhcpContext{
-		xid:        rand.Uint32(),
+		xid:        xid,
 		dhcpIn:     make(chan []byte, 100),
 		arpClient:  arpClient,
 		ArpContext: arpContext,
@@ -65,12 +64,13 @@ type iState interface {
 
 type dhcpContext struct {
 	*ArpContext
-	arpClient             ArpClient
-	xid, serverIp, giaddr uint32
-	dhcpIn                chan []byte
-	t1, t2, t0            time.Time
-	state                 iState
-	login                 string
+	arpClient        ArpClient
+	xid              []byte
+	serverIp, giaddr uint32
+	dhcpIn           chan []byte
+	t1, t2, t0       time.Time
+	state            iState
+	login            string
 }
 
 func (self *dhcpContext) resetLease() {

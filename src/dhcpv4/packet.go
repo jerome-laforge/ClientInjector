@@ -144,8 +144,8 @@ func (dp DhcpPacket) GetXid() []byte {
 	return dp.Raw[4:8:8]
 }
 
-func (dp DhcpPacket) SetXid(xid uint32) {
-	util.ConvertUint32To4byte(xid, dp.Raw[4:8])
+func (dp DhcpPacket) SetXid(xid []byte) {
+	copy(dp.Raw[4:8], xid)
 }
 
 func (dp DhcpPacket) GetClientIp() uint32 {

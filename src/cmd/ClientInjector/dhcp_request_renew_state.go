@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"dhcpv4"
 	"dhcpv4/option"
-	"dhcpv4/util"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -101,12 +101,9 @@ func (self requestRenewState) do() iState {
 					continue
 				}
 
-				if self.xid != util.Convert4byteToUint32(dp.GetXid()) {
+				if !bytes.Equal(self.xid, dp.GetXid()) {
 					// bug of DHCP Server ?
-					expectedXid := make([]byte, 4)
-					util.ConvertUint32To4byte(self.xid, expectedXid)
-
-					log.Println(self.macAddr, fmt.Sprintf("RENEW: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(expectedXid), hex.EncodeToString(dp.GetXid())))
+					log.Println(self.macAddr, fmt.Sprintf("RENEW: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(self.xid), hex.EncodeToString(dp.GetXid())))
 					continue
 				}
 
