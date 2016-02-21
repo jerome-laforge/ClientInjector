@@ -52,10 +52,6 @@ func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*D
 		dhcpContext: d.ctx,
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
 	return d, nil
 }
 
