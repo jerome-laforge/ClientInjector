@@ -34,23 +34,21 @@ type DhcpContextByIp struct {
 
 func (self *DhcpContextByIp) SetIp(ip uint32, dhcpContext *dhcpContext) {
 	self.mutex.Lock()
-	defer self.mutex.Unlock()
-
 	dhcpContextByIp.dMap[ip] = dhcpContext
+	self.mutex.Unlock()
 }
 
 func (self *DhcpContextByIp) ResetIp(ip uint32) {
 	self.mutex.Lock()
-	defer self.mutex.Unlock()
-
 	delete(dhcpContextByIp.dMap, ip)
+	self.mutex.Unlock()
 }
 
 func (self *DhcpContextByIp) Get(ip uint32) (*dhcpContext, bool) {
 	self.mutex.RLock()
-	defer self.mutex.RUnlock()
-
 	dhcpCLient, ok := dhcpContextByIp.dMap[ip]
+	self.mutex.RUnlock()
+
 	return dhcpCLient, ok
 }
 
