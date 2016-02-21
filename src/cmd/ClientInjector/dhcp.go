@@ -25,11 +25,10 @@ func (self *DhcpClient) run() {
 }
 
 func (self DhcpClient) String() string {
-	macAddr := self.ctx.macAddr.Load().(net.HardwareAddr)
 	xid := make([]byte, 4)
 	util.ConvertUint32To4byte(self.ctx.xid, xid)
 
-	return "mac: " + macAddr.String() + " xid: 0x" + hex.EncodeToString(xid)
+	return "mac: " + self.ctx.macAddr.String() + " xid: 0x" + hex.EncodeToString(xid)
 }
 
 func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpClient, error) {

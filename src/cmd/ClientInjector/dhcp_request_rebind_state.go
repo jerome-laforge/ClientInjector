@@ -18,14 +18,11 @@ type requestRebindState struct {
 }
 
 func (self *requestRebindState) do() iState {
-	var (
-		macAddr = self.macAddr.Load().(net.HardwareAddr)
-		ipAddr  = self.ipAddr.Load().(uint32)
-	)
+	ipAddr := self.ipAddr.Load().(uint32)
 
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
-		SrcMAC:       macAddr,
+		SrcMAC:       self.macAddr,
 		DstMAC:       hwAddrBcast,
 		EthernetType: layers.EthernetTypeIPv4,
 	}
@@ -48,19 +45,19 @@ func (self *requestRebindState) do() iState {
 	request := new(dhcpv4.DhcpPacket)
 	request.ConstructWithPreAllocatedBuffer(buf, option.DHCPREQUEST)
 	request.SetXid(self.xid)
-	request.SetMacAddr([]byte(macAddr))
+	request.SetMacAddr([]byte(self.macAddr))
 
 	opt50 := new(option.Option50RequestedIpAddress)
 	opt50.Construct(ipAddr)
 	request.AddOption(opt50)
 
 	opt61 := new(option.Option61ClientIdentifier)
-	opt61.Construct(byte(1), macAddr)
+	opt61.Construct(byte(1), self.macAddr)
 	request.AddOption(opt61)
 
 	if dhcRelay {
 		request.SetGiAddr(self.giaddr)
-		request.AddOption(generateOption82([]byte(macAddr)))
+		request.AddOption(generateOption82([]byte(self.macAddr)))
 	}
 
 	if option90 {
@@ -74,7 +71,7 @@ func (self *requestRebindState) do() iState {
 	for {
 		// send request
 		for err := sentMsg(eth, ipv4, udp, bootp); err != nil; {
-			log.Println(macAddr, "error sending request", err)
+			log.Println(self.macAddr, "error sending request", err)
 			time.Sleep(2 * time.Second)
 		}
 
@@ -88,7 +85,7 @@ func (self *requestRebindState) do() iState {
 			timeout = deadline.Sub(time.Now())
 			select {
 			case <-time.After(timeout):
-				log.Println(macAddr, "REBIND: timeout")
+				log.Println(self.macAddr, "REBIND: timeout")
 
 				return timeoutRebindState{
 					dhcpContext: self.dhcpContext,
@@ -104,7 +101,7 @@ func (self *requestRebindState) do() iState {
 					expectedXid := make([]byte, 4)
 					util.ConvertUint32To4byte(self.xid, expectedXid)
 
-					log.Println(macAddr, fmt.Sprintf("REBIND: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(expectedXid), hex.EncodeToString(dp.GetXid())))
+					log.Println(self.macAddr, fmt.Sprintf("REBIND: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(expectedXid), hex.EncodeToString(dp.GetXid())))
 					continue
 				}
 
@@ -117,16 +114,16 @@ func (self *requestRebindState) do() iState {
 							dhcpContext: self.dhcpContext,
 						}
 					case option.DHCPNAK:
-						log.Println(macAddr, "REBIND: receive NAK")
+						log.Println(self.macAddr, "REBIND: receive NAK")
 						return discoverState{
 							dhcpContext: self.dhcpContext,
 						}
 					default:
-						log.Println(macAddr, fmt.Sprintf("REBIND: unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
+						log.Println(self.macAddr, fmt.Sprintf("REBIND: unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
 						continue
 					}
 				} else {
-					log.Println(macAddr, "REBIND: option 53 is missing")
+					log.Println(self.macAddr, "REBIND: option 53 is missing")
 					continue
 				}
 			}
