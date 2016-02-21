@@ -34,7 +34,7 @@
 		<delete dir="${GO-TOOLS}" quiet="true"/>
 	</target>
 
-	<target name="build" depends="clean, -gb, test">
+	<target name="build" depends="-gb">
 		<!--echo message="gb.intern.present : ${gb.intern.present}"/>
 		<echo message="gb.path.present : ${gb.path.present}"/>
 		<echo message="gb.not.detected : ${gb.not.detected}"/>
@@ -48,7 +48,7 @@
 		</exec>
 	</target>
 
-	<target name="build_race_detector" depends="clean, -gb, test">
+	<target name="build_race_detector" depends="-gb">
 		<exec executable="${GB_CMD}" logerror="true" dir="${basedir}">
 			<env key="Path" value="${GO-TOOLS}/bin/"/>
 			<env key="GOOS" value="${GOOS}"/>
