@@ -29,13 +29,13 @@ func (self DhcpClient) String() string {
 }
 
 func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpClient, error) {
-
 	d := new(DhcpClient)
 
 	arpClient, arpContext, err := ConstructArpClient(macAddr)
 	if err != nil {
 		return nil, err
 	}
+
 	xid := make([]byte, 4)
 	util.ConvertUint32To4byte(rand.Uint32(), xid)
 	d.ctx = dhcpContext{
@@ -47,6 +47,7 @@ func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*D
 		login:      login,
 	}
 
+	// At beginning,  the client send a DISCOVER
 	d.currentState = discoverState{
 		dhcpContext: d.ctx,
 	}
