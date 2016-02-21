@@ -196,8 +196,8 @@ func dispatchIncomingPacket() {
 				continue
 			}
 
-			if dhcpClient, ok := dhcpContextByIp.Get(util.Convert4byteToUint32(arpLayer.DstProtAddress)); ok {
-				dhcpClient.arpIn <- arpLayer
+			if dhcpContext, ok := dhcpContextByIp.Get(util.Convert4byteToUint32(arpLayer.DstProtAddress)); ok {
+				dhcpContext.arpIn <- arpLayer
 			}
 
 			// next packet
