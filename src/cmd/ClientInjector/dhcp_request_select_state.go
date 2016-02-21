@@ -19,6 +19,7 @@ type requestSelectState struct {
 
 func (self requestSelectState) do() iState {
 	ipAddr := self.ipAddr.Load().(uint32)
+
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
 		SrcMAC:       self.macAddr,

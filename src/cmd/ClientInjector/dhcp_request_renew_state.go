@@ -21,6 +21,7 @@ func (self requestRenewState) do() iState {
 	// TODO unicast to self.ServerIp
 	ipAddr := self.ipAddr.Load().(uint32)
 	// Set up all the layers' fields we can.
+
 	eth := &layers.Ethernet{
 		SrcMAC:       self.macAddr,
 		DstMAC:       hwAddrBcast,
