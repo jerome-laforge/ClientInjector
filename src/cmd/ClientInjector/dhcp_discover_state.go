@@ -45,12 +45,12 @@ func (self discoverState) do() iState {
 
 	discover := new(dhcpv4.DhcpPacket)
 	discover.ConstructWithPreAllocatedBuffer(buf, option.DHCPDISCOVER)
-	discover.SetMacAddr([]byte(self.macAddr))
+	discover.SetMacAddr(self.macAddr)
 	discover.SetXid(self.xid)
 
 	if dhcRelay {
 		discover.SetGiAddr(self.giaddr)
-		discover.AddOption(generateOption82([]byte(self.macAddr)))
+		discover.AddOption(generateOption82(self.macAddr))
 	}
 
 	if option90 {

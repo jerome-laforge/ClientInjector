@@ -59,7 +59,7 @@ func (self *arpClient) manageArpPacket() {
 			HwAddressSize:     6,
 			ProtAddressSize:   4,
 			Operation:         layers.ARPReply,
-			SourceHwAddress:   []byte(self.ctx.macAddr),
+			SourceHwAddress:   self.ctx.macAddr,
 			SourceProtAddress: convertUint32ToByte(ipAddr),
 			DstHwAddress:      arpRcv.SourceHwAddress,
 			DstProtAddress:    arpRcv.SourceProtAddress,

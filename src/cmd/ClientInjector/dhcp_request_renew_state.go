@@ -45,7 +45,7 @@ func (self requestRenewState) do() iState {
 	request := new(dhcpv4.DhcpPacket)
 	request.ConstructWithPreAllocatedBuffer(buf, option.DHCPREQUEST)
 	request.SetXid(self.xid)
-	request.SetMacAddr([]byte(self.macAddr))
+	request.SetMacAddr(self.macAddr)
 
 	opt50 := new(option.Option50RequestedIpAddress)
 	opt50.Construct(ipAddr)
@@ -65,7 +65,7 @@ func (self requestRenewState) do() iState {
 
 	if dhcRelay && ipAddr == 0 {
 		request.SetGiAddr(self.giaddr)
-		request.AddOption(generateOption82([]byte(self.macAddr)))
+		request.AddOption(generateOption82(self.macAddr))
 	}
 
 	bootp := &PayloadLayer{

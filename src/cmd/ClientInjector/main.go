@@ -92,7 +92,7 @@ func main() {
 		}
 	}()
 
-	intFirstMacAddr := util.ConvertMax8byteToUint64([]byte(firstMacAddr))
+	intFirstMacAddr := util.ConvertMax8byteToUint64(firstMacAddr)
 	macAddr := make([]byte, 8)
 	util.ConvertUint64To8byte(intFirstMacAddr+uint64(*paramNbDhcpClient)-1, macAddr)
 
@@ -175,7 +175,7 @@ func dispatchIncomingPacket() {
 				continue
 			}
 
-			macAddr := util.ConvertMax8byteToUint64([]byte(linkLayer.(*layers.Ethernet).DstMAC))
+			macAddr := util.ConvertMax8byteToUint64(linkLayer.(*layers.Ethernet).DstMAC)
 
 			if dhcpClient, ok := dhcpClientsByMac[macAddr]; ok {
 				dhcpClient.ctx.dhcpIn <- appLayer.Payload()
@@ -192,7 +192,7 @@ func dispatchIncomingPacket() {
 				continue
 			}
 
-			if !bytes.Equal([]byte(arpLayer.DstHwAddress), []byte(hwAddrBcast)) {
+			if !bytes.Equal(arpLayer.DstHwAddress, hwAddrBcast) {
 				continue
 			}
 

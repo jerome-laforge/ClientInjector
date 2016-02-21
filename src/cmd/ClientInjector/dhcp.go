@@ -126,10 +126,10 @@ func extractAllLeaseTime(dp *dhcpv4.DhcpPacket) (t0, t1, t2 time.Time) {
 
 func generateOption82(macAddr net.HardwareAddr) *option.Option82DhcpAgentOption {
 	opt82_1 := new(option.Option82_1CircuitId)
-	opt82_1.Construct([]byte(hex.EncodeToString([]byte(macAddr))))
+	opt82_1.Construct([]byte(hex.EncodeToString(macAddr)))
 
 	opt82_2 := new(option.Option82_2RemoteId)
-	opt82_2.Construct([]byte(hex.EncodeToString([]byte(macAddr))))
+	opt82_2.Construct([]byte(hex.EncodeToString(macAddr)))
 
 	opt82 := new(option.Option82DhcpAgentOption)
 	opt82.Construct([]option.SubOption82{
