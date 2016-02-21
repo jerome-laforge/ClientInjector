@@ -84,6 +84,7 @@ func main() {
 	if globalHandle, err = getPcapHandleFor(*paramIfaceName); err != nil {
 		panic(err)
 	}
+	defer globalHandle.Close()
 
 	go func() {
 		if err := http.ListenAndServe(":6060", nil); err != nil {
