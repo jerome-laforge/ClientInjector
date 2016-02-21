@@ -22,8 +22,8 @@ import (
 var (
 	globalHandle     *pcap.Handle
 	dhcpClientsByMac = make(map[uint64]*DhcpClient)
-	dhcRelay         = true
-	option90         = true
+	dhcRelay         bool
+	option90         bool
 	dhcpContextByIp  DhcpContextByIp
 )
 
