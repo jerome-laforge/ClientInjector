@@ -161,8 +161,6 @@ func dispatchIncomingPacket() {
 
 		// DHCP
 		if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
-			linkLayer := packet.Layer(layers.LayerTypeEthernet)
-
 			if udpLayer.(*layers.UDP).SrcPort != bootps {
 				continue
 			}
@@ -172,7 +170,7 @@ func dispatchIncomingPacket() {
 				continue
 			}
 
-			macAddr := util.ConvertMax8byteToUint64(linkLayer.(*layers.Ethernet).DstMAC)
+			macAddr := util.ConvertMax8byteToUint64(packet.Layer(layers.LayerTypeEthernet).(*layers.Ethernet).DstMAC)
 
 			if dhcpClient, ok := dhcpClientsByMac[macAddr]; ok {
 				dhcpClient.ctx.dhcpIn <- appLayer.Payload()
