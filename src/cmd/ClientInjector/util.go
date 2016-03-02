@@ -1,5 +1,7 @@
 package main
 
+// Integer power: compute a**b using binary powering algorithm
+// See Donald Knuth, The Art of Computer Programming, Volume 2, Section 4.6.3
 func Pow(a, b int) int {
 	p := 1
 	for b > 0 {
