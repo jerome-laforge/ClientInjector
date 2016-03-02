@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	"math"
 	"net"
 	"time"
 
@@ -72,7 +71,7 @@ func (self discoverState) do() iState {
 			continue
 		}
 
-		sleep = time.Duration(math.Min(2*math.Pow(2, float64(retries)), 64)) * time.Second
+		sleep = time.Duration(Min(2*Pow(2, retries), 64)) * time.Second
 
 		var (
 			payload  []byte
