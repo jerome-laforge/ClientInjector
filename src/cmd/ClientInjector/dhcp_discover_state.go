@@ -71,7 +71,7 @@ func (self discoverState) do() iState {
 			continue
 		}
 
-		sleep = time.Duration(Min(2*Pow(2, retries), 64)) * time.Second
+		sleep = time.Duration(Min(Pow(2, retries+1), 64)) * time.Second
 
 		var (
 			payload  []byte
