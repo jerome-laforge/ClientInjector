@@ -61,7 +61,7 @@ func (self discoverState) do() iState {
 	}
 
 	var sleep time.Duration
-	var retries int
+	var tries int = 1
 
 	for {
 		// send discover
@@ -71,7 +71,7 @@ func (self discoverState) do() iState {
 			continue
 		}
 
-		sleep = time.Duration(Min(Pow(2, retries+1), 64)) * time.Second
+		sleep = time.Duration(Min(Pow(2, tries), 64)) * time.Second
 
 		var (
 			payload  []byte
@@ -83,7 +83,7 @@ func (self discoverState) do() iState {
 			timeout = deadline.Sub(time.Now())
 			select {
 			case <-time.After(timeout):
-				log.Println(self.macAddr, "DISCOVER: timeout", retries)
+				log.Println(self.macAddr, "DISCOVER: timeout", tries)
 				goto TIMEOUT
 			case payload = <-self.dhcpIn:
 				dp, err := dhcpv4.Parse(payload)
@@ -124,6 +124,6 @@ func (self discoverState) do() iState {
 			}
 		}
 	TIMEOUT:
-		retries++
+		tries++
 	}
 }
