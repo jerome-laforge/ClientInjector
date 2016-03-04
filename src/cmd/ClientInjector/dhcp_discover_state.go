@@ -61,7 +61,7 @@ func (self discoverState) do() iState {
 	}
 
 	var sleep time.Duration
-	var tries int = 1
+	var tries uint = 1
 
 	for {
 		// send discover
@@ -71,7 +71,12 @@ func (self discoverState) do() iState {
 			continue
 		}
 
-		sleep = time.Duration(Min(Pow(2, tries), 64)) * time.Second
+		// sleep = 2s, 4s, 8s, 16s, 32s, 64s, 64s 64s ...
+		if tries < 6 {
+			sleep = (1 << tries) * time.Second
+		} else {
+			sleep = 64 * time.Second
+		}
 
 		var (
 			payload  []byte
