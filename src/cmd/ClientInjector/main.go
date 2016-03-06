@@ -74,15 +74,15 @@ func main() {
 
 	firstMacAddr, err := net.ParseMAC(*paramFirstMacAddr)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	giaddr, err := util.ConvertIpAddrToUint32(*paramGiADDR)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	if globalHandle, err = getPcapHandleFor(*paramIfaceName); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	defer globalHandle.Close()
 
