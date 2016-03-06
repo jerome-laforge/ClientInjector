@@ -96,8 +96,8 @@ func main() {
 	macAddr := make([]byte, 8)
 	util.ConvertUint64To8byte(intFirstMacAddr+uint64(*paramNbDhcpClient)-1, macAddr)
 
-	log.Println("First : Mac Addr", firstMacAddr, " - login", fmt.Sprintf(*paramLogin, 0))
-	log.Println("Last  : Mac Addr", net.HardwareAddr(macAddr[2:]), " - login", fmt.Sprintf(*paramLogin, *paramNbDhcpClient-1))
+	log.Println("First : Mac Addr", firstMacAddr, "- login", fmt.Sprintf(*paramLogin, 0))
+	log.Println("Last  : Mac Addr", net.HardwareAddr(macAddr[2:]), "- login", fmt.Sprintf(*paramLogin, *paramNbDhcpClient-1))
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
