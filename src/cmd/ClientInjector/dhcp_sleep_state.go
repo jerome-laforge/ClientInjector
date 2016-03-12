@@ -6,75 +6,59 @@ import (
 	"time"
 )
 
-type sleepState struct {
-	dhcpContext
+type sleepState struct{}
+
+func (_ sleepState) do(ctx *dhcpContext) iState {
+	ipAddr := ctx.ipAddr.Load().(uint32)
+
+	log.Println(ctx.macAddr, "ip", util.ConvertUint32ToIpAddr(ipAddr), "sleep until t1", ctx.t1)
+	time.Sleep(ctx.t1.Sub(time.Now()))
+
+	return requestRenewState{}
 }
 
-func (self sleepState) do() iState {
-	ipAddr := self.ipAddr.Load().(uint32)
+type timeoutRenewState struct{}
 
-	log.Println(self.macAddr, "ip", util.ConvertUint32ToIpAddr(ipAddr), "sleep until t1", self.t1)
-	time.Sleep(self.t1.Sub(time.Now()))
-
-	return requestRenewState{
-		dhcpContext: self.dhcpContext,
-	}
-}
-
-type timeoutRenewState struct {
-	dhcpContext
-}
-
-func (self timeoutRenewState) do() iState {
+func (_ timeoutRenewState) do(ctx *dhcpContext) iState {
 	var (
-		ipAddr    = self.ipAddr.Load().(uint32)
+		ipAddr    = ctx.ipAddr.Load().(uint32)
 		now       = time.Now()
-		timeout   = self.t2.Sub(now) / 2
+		timeout   = ctx.t2.Sub(now) / 2
 		nextState iState
 	)
 
 	if timeout < time.Minute {
-		timeout = self.t2.Sub(now)
-		nextState = &requestRebindState{
-			dhcpContext: self.dhcpContext,
-		}
+		timeout = ctx.t2.Sub(now)
+		nextState = requestRebindState{}
 	} else {
-		nextState = &requestRenewState{
-			dhcpContext: self.dhcpContext,
-		}
+		nextState = requestRenewState{}
 	}
 
-	log.Println(self.macAddr, "ip", util.ConvertUint32ToIpAddr(ipAddr), "sleep until ", now.Add(timeout))
+	log.Println(ctx.macAddr, "ip", util.ConvertUint32ToIpAddr(ipAddr), "sleep until ", now.Add(timeout))
 	time.Sleep(timeout)
 	return nextState
 }
 
-type timeoutRebindState struct {
-	dhcpContext
-}
+type timeoutRebindState struct{}
 
-func (self timeoutRebindState) do() iState {
+func (_ timeoutRebindState) do(ctx *dhcpContext) iState {
 	var (
-		ipAddr    = self.ipAddr.Load().(uint32)
+		ipAddr    = ctx.ipAddr.Load().(uint32)
 		now       = time.Now()
-		timeout   = self.t0.Sub(now) / 2
+		timeout   = ctx.t0.Sub(now) / 2
 		nextState iState
 	)
 
 	if timeout < time.Minute {
 		// lease will be expired because DHCP Clint didn't receive ACK for all its REQUEST.
 		// DHCP Client will sent DISCOVER
-		timeout = self.t0.Sub(now)
-		nextState = &discoverState{
-			dhcpContext: self.dhcpContext,
-		}
+		timeout = ctx.t0.Sub(now)
+		nextState = discoverState{}
 	} else {
-		nextState = &requestRebindState{
-			dhcpContext: self.dhcpContext,
-		}
+		nextState = requestRebindState{}
 	}
 
-	log.Println(self.macAddr, "ip", util.ConvertUint32ToIpAddr(ipAddr), "sleep until ", now.Add(timeout))
+	log.Println(ctx.macAddr, "ip", util.ConvertUint32ToIpAddr(ipAddr), "sleep until ", now.Add(timeout))
 	time.Sleep(timeout)
 	return nextState
 }

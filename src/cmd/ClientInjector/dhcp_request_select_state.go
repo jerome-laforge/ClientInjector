@@ -13,16 +13,14 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-type requestSelectState struct {
-	dhcpContext
-}
+type requestSelectState struct{}
 
-func (self requestSelectState) do() iState {
-	ipAddr := self.ipAddr.Load().(uint32)
+func (_ requestSelectState) do(ctx *dhcpContext) iState {
+	ipAddr := ctx.ipAddr.Load().(uint32)
 
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
-		SrcMAC:       self.macAddr,
+		SrcMAC:       ctx.macAddr,
 		DstMAC:       hwAddrBcast,
 		EthernetType: layers.EthernetTypeIPv4,
 	}
@@ -44,28 +42,28 @@ func (self requestSelectState) do() iState {
 
 	request := new(dhcpv4.DhcpPacket)
 	request.ConstructWithPreAllocatedBuffer(buf, option.DHCPREQUEST)
-	request.SetXid(self.xid)
-	request.SetMacAddr(self.macAddr)
+	request.SetXid(ctx.xid)
+	request.SetMacAddr(ctx.macAddr)
 
 	opt50 := new(option.Option50RequestedIpAddress)
 	opt50.Construct(ipAddr)
 	request.AddOption(opt50)
 
 	opt54 := new(option.Option54DhcpServerIdentifier)
-	opt54.Construct(self.serverIp)
+	opt54.Construct(ctx.serverIp)
 	request.AddOption(opt54)
 
 	opt61 := new(option.Option61ClientIdentifier)
-	opt61.Construct(byte(1), self.macAddr)
+	opt61.Construct(byte(1), ctx.macAddr)
 	request.AddOption(opt61)
 
 	if dhcRelay {
-		request.SetGiAddr(self.giaddr)
-		request.AddOption(generateOption82(self.macAddr))
+		request.SetGiAddr(ctx.giaddr)
+		request.AddOption(generateOption82(ctx.macAddr))
 	}
 
 	if option90 {
-		request.AddOption(generateOption90(self.login))
+		request.AddOption(generateOption90(ctx.login))
 	}
 
 	bootp := &PayloadLayer{
@@ -75,7 +73,7 @@ func (self requestSelectState) do() iState {
 	for {
 		// send request
 		for err := sentMsg(eth, ipv4, udp, bootp); err != nil; {
-			log.Println(self.macAddr, "SELECT: error sending request", err)
+			log.Println(ctx.macAddr, "SELECT: error sending request", err)
 			time.Sleep(2 * time.Second)
 		}
 
@@ -89,41 +87,36 @@ func (self requestSelectState) do() iState {
 			timeout = deadline.Sub(time.Now())
 			select {
 			case <-time.After(timeout):
-				log.Println(self.macAddr, "SELECT: timeout")
+				log.Println(ctx.macAddr, "SELECT: timeout")
 				goto TIMEOUT
-			case payload = <-self.dhcpIn:
+			case payload = <-ctx.dhcpIn:
 				dp, err := dhcpv4.Parse(payload)
 				if err != nil {
 					// it is not DHCP packet...
 					continue
 				}
 
-				if !bytes.Equal(self.xid, dp.GetXid()) {
+				if !bytes.Equal(ctx.xid, dp.GetXid()) {
 					// bug of DHCP Server ?
-					log.Println(self.macAddr, fmt.Sprintf("SELECT: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(self.xid), hex.EncodeToString(dp.GetXid())))
+					log.Println(ctx.macAddr, fmt.Sprintf("SELECT: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(ctx.xid), hex.EncodeToString(dp.GetXid())))
 					continue
 				}
 
 				if msgType, err := dp.GetTypeMessage(); err == nil {
 					switch msgType {
 					case option.DHCPACK:
-						dhcpContextByIp.SetIp(ipAddr, &self.dhcpContext)
-						self.t0, self.t1, self.t2 = extractAllLeaseTime(dp)
-
-						return sleepState{
-							dhcpContext: self.dhcpContext,
-						}
+						dhcpContextByIp.SetIp(ipAddr, ctx)
+						ctx.t0, ctx.t1, ctx.t2 = extractAllLeaseTime(dp)
+						return sleepState{}
 					case option.DHCPNAK:
-						log.Println(self.macAddr, "SELECT: receive NAK")
-						return discoverState{
-							dhcpContext: self.dhcpContext,
-						}
+						log.Println(ctx.macAddr, "SELECT: receive NAK")
+						return discoverState{}
 					default:
-						log.Println(self.macAddr, fmt.Sprintf("SELECT: unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
+						log.Println(ctx.macAddr, fmt.Sprintf("SELECT: unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
 						continue
 					}
 				} else {
-					log.Println(self.macAddr, "SELECT: option 53 is missing")
+					log.Println(ctx.macAddr, "SELECT: option 53 is missing")
 					continue
 				}
 			}

@@ -12,14 +12,14 @@ import (
 
 type DhcpClient struct {
 	currentState iState
-	ctx          dhcpContext
+	ctx          *dhcpContext
 }
 
 func (self *DhcpClient) run() {
 	go func() {
 		for {
 			// Let's do the job forever...
-			self.currentState = self.currentState.do()
+			self.currentState = self.currentState.do(self.ctx)
 		}
 	}()
 }
@@ -38,7 +38,7 @@ func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*D
 
 	xid := make([]byte, 4)
 	util.ConvertUint32To4byte(rand.Uint32(), xid)
-	d.ctx = dhcpContext{
+	d.ctx = &dhcpContext{
 		xid:        xid,
 		dhcpIn:     make(chan []byte, 100),
 		arpClient:  arpClient,
@@ -48,15 +48,13 @@ func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*D
 	}
 
 	// At beginning,  the client send a DISCOVER
-	d.currentState = discoverState{
-		dhcpContext: d.ctx,
-	}
+	d.currentState = discoverState{}
 
 	return d, nil
 }
 
 type iState interface {
-	do() iState
+	do(*dhcpContext) iState
 }
 
 type dhcpContext struct {
@@ -65,8 +63,7 @@ type dhcpContext struct {
 	xid              []byte
 	serverIp, giaddr uint32
 	dhcpIn           chan []byte
-	t1, t2, t0       time.Time
-	state            iState
+	t0, t1, t2       time.Time
 	login            string
 }
 
