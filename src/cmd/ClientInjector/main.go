@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"cmd/ClientInjector/network"
 	"dhcpv4/util"
 	"flag"
@@ -158,10 +157,6 @@ func dispatchIncomingPacket() {
 		if layer := packet.Layer(layers.LayerTypeARP); layer != nil {
 			arpLayer := layer.(*layers.ARP)
 			if arpLayer.Operation != layers.ARPRequest {
-				continue
-			}
-
-			if !bytes.Equal(arpLayer.DstHwAddress, hwAddrBcast) {
 				continue
 			}
 

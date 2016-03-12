@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"cmd/ClientInjector/network"
 	"dhcpv4/util"
 	"encoding/binary"
@@ -45,6 +46,11 @@ func (self *arpClient) manageArpPacket() {
 	for {
 		arpRcv = <-self.ctx.arpIn
 		ipAddr := self.ctx.ipAddr.Load().(uint32)
+
+		if !bytes.Equal(arpRcv.DstHwAddress, hwAddrBcast) && !bytes.Equal(arpRcv.DstHwAddress, self.ctx.macAddr) {
+			log.Println(self.ctx.macAddr, "Recieve ARP request for", util.ConvertUint32ToIpAddr(ipAddr), " but it is ignored because DstMacAddr is inconsistent ")
+			continue
+		}
 
 		log.Println(self.ctx.macAddr, "Recieve ARP request for", util.ConvertUint32ToIpAddr(ipAddr))
 
