@@ -21,7 +21,7 @@ type ArpContext struct {
 	arpIn   chan *layers.ARP
 }
 
-func ConstructArpClient(macAddr net.HardwareAddr) (*ArpClient, *ArpContext, error) {
+func ConstructArpClient(macAddr net.HardwareAddr) (*ArpClient, *ArpContext) {
 	c := new(ArpClient)
 
 	c.ctx.macAddr = macAddr
@@ -29,7 +29,7 @@ func ConstructArpClient(macAddr net.HardwareAddr) (*ArpClient, *ArpContext, erro
 	c.ctx.arpIn = make(chan *layers.ARP, 100)
 	go c.manageArpPacket()
 
-	return c, &c.ctx, nil
+	return c, &c.ctx
 }
 
 type ArpClient struct {

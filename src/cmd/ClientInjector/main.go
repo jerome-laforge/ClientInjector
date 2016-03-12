@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof"
-	"os"
 	"sync"
 	"time"
 
@@ -105,11 +104,7 @@ func main() {
 		// Reduce the byte array, as mac addr is only on 6 bytes with BigEndian format
 		macAddr = macAddr[2:]
 
-		var dhcpClient *DhcpClient
-		if dhcpClient, err = CreateDhcpClient(macAddr, giaddr, fmt.Sprintf(*paramLogin, i)); err != nil {
-			log.Printf("interface %v: %v", *paramIfaceName, err)
-			os.Exit(1)
-		}
+		dhcpClient := CreateDhcpClient(macAddr, giaddr, fmt.Sprintf(*paramLogin, i))
 
 		log.Println("DhcpClient created:", dhcpClient)
 		dhcpClientsByMac[intFirstMacAddr+uint64(i)] = dhcpClient

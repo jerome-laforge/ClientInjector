@@ -28,13 +28,10 @@ func (self DhcpClient) String() string {
 	return "mac: " + self.ctx.macAddr.String() + " xid: 0x" + hex.EncodeToString(self.ctx.xid)
 }
 
-func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpClient, error) {
+func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) *DhcpClient {
 	d := new(DhcpClient)
 
-	arpClient, arpContext, err := ConstructArpClient(macAddr)
-	if err != nil {
-		return nil, err
-	}
+	arpClient, arpContext := ConstructArpClient(macAddr)
 
 	xid := make([]byte, 4)
 	util.ConvertUint32To4byte(rand.Uint32(), xid)
@@ -50,7 +47,7 @@ func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*D
 	// At beginning,  the client send a DISCOVER
 	d.currentState = discoverState{}
 
-	return d, nil
+	return d
 }
 
 type iState interface {
