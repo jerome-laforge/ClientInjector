@@ -21,12 +21,8 @@ type ArpContext struct {
 	arpIn   chan *layers.ARP
 }
 
-type ArpClient interface {
-	sendGratuitousARP() error
-}
-
-func ConstructArpClient(macAddr net.HardwareAddr) (ArpClient, *ArpContext, error) {
-	c := new(arpClient)
+func ConstructArpClient(macAddr net.HardwareAddr) (*ArpClient, *ArpContext, error) {
+	c := new(ArpClient)
 
 	c.ctx.macAddr = macAddr
 	c.ctx.ipAddr.Store(uint32(0))
@@ -36,11 +32,11 @@ func ConstructArpClient(macAddr net.HardwareAddr) (ArpClient, *ArpContext, error
 	return c, &c.ctx, nil
 }
 
-type arpClient struct {
+type ArpClient struct {
 	ctx ArpContext
 }
 
-func (self *arpClient) manageArpPacket() {
+func (self *ArpClient) manageArpPacket() {
 	var arpRcv *layers.ARP
 
 	for {
@@ -76,7 +72,7 @@ func (self *arpClient) manageArpPacket() {
 	}
 }
 
-func (self *arpClient) sendGratuitousARP() error {
+func (self *ArpClient) sendGratuitousARP() error {
 	ipAddr := self.ctx.ipAddr.Load().(uint32)
 
 	eth := &layers.Ethernet{

@@ -59,7 +59,7 @@ type iState interface {
 
 type dhcpContext struct {
 	*ArpContext
-	arpClient        ArpClient
+	arpClient        *ArpClient
 	xid              []byte
 	serverIp, giaddr uint32
 	dhcpIn           chan []byte
