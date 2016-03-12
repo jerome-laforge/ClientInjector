@@ -56,7 +56,7 @@ func init() {
 func main() {
 	var (
 		paramIfaceName    = flag.String("eth", "eth0", "Define on which interface the customer will bind")
-		paramFirstMacAddr = flag.String("mac", "00:00:14:11:19:77", "First mac address use for the first client (incremented by one for each next clients)")
+		paramFirstMacAddr = flag.String("mac", "00:00:13:11:19:77", "First mac address use for the first client (incremented by one for each next clients)")
 		paramGiADDR       = flag.String("giaddr", "10.0.0.1", "Use as GiADDR into DHCPv4 header")
 		paramNbDhcpClient = flag.Uint("nb_dhcp", 1, "Define number of dhcp client")
 		paramLogin        = flag.String("login", "%08d", "Define what is use into option90. fmt.Printf and index of dhcp client with range [0, nb_dhcp[ is used.")
