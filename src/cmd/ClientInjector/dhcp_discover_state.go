@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"cmd/ClientInjector/network"
 	"dhcpv4"
 	"dhcpv4/option"
 	"encoding/hex"
@@ -32,8 +33,8 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 		DstIP:    net.IPv4bcast,
 	}
 	udp := &layers.UDP{
-		SrcPort: bootpc,
-		DstPort: bootps,
+		SrcPort: network.Bootpc,
+		DstPort: network.Bootps,
 	}
 	udp.SetNetworkLayerForChecksum(ipv4)
 
@@ -63,7 +64,7 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 
 	for {
 		// send discover
-		for err := sentMsg(eth, ipv4, udp, bootp); err != nil; {
+		for err := network.SentPacket(eth, ipv4, udp, bootp); err != nil; {
 			log.Println(ctx.macAddr, "DISCOVER: error sending discover", err)
 			time.Sleep(2 * time.Second)
 			continue

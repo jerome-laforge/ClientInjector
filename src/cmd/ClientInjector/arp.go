@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmd/ClientInjector/network"
 	"dhcpv4/util"
 	"encoding/binary"
 	"log"
@@ -65,7 +66,7 @@ func (self *arpClient) manageArpPacket() {
 			DstProtAddress:    arpRcv.SourceProtAddress,
 		}
 
-		sentMsg(eth, arp)
+		network.SentPacket(eth, arp)
 	}
 }
 
@@ -93,7 +94,7 @@ func (self *arpClient) sendGratuitousARP() error {
 
 	log.Println(self.ctx.macAddr, "Send Gratuitous ARP", util.ConvertUint32ToIpAddr(ipAddr))
 
-	return sentMsg(eth, arp)
+	return network.SentPacket(eth, arp)
 }
 
 func convertUint32ToBytes(i uint32) []byte {

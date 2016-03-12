@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"cmd/ClientInjector/network"
 	"dhcpv4/util"
 	"flag"
 	"fmt"
@@ -14,13 +15,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcap"
 )
 
 var (
-	globalHandle     *pcap.Handle
 	dhcpClientsByMac = make(map[uint64]*DhcpClient)
 	dhcRelay         bool
 	option90         bool
@@ -81,10 +79,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if globalHandle, err = getPcapHandleFor(*paramIfaceName); err != nil {
+	if err = network.OpenPcapHandle(*paramIfaceName); err != nil {
 		log.Fatal(err)
 	}
-	defer globalHandle.Close()
+	defer network.Close()
 
 	go func() {
 		if err := http.ListenAndServe(":6060", nil); err != nil {
@@ -131,37 +129,13 @@ func main() {
 	select {}
 }
 
-func getPcapHandleFor(ifaceName string) (*pcap.Handle, error) {
-	// Get interfaces.
-	iface, err := net.InterfaceByName(ifaceName)
-	if err != nil {
-		return nil, err
-	}
-
-	// Open up a pcap handle for packet reads/writes.
-	handle, err := pcap.OpenLive(iface.Name, mtu, true, pcap.BlockForever)
-	if err != nil {
-		return nil, err
-	}
-
-	handle.SetBPFFilter(fmt.Sprintf("arp or port %v", bootps))
-
-	return handle, nil
-
-}
-
 func dispatchIncomingPacket() {
-	var (
-		packetSource = gopacket.NewPacketSource(globalHandle, layers.LayerTypeEthernet)
-		in           = packetSource.Packets()
-	)
-
 	for {
-		packet := <-in
+		packet := network.NextPacket()
 
 		// DHCP
 		if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
-			if udpLayer.(*layers.UDP).SrcPort != bootps {
+			if udpLayer.(*layers.UDP).SrcPort != network.Bootps {
 				continue
 			}
 
@@ -201,23 +175,4 @@ func dispatchIncomingPacket() {
 
 	}
 
-}
-
-func sentMsg(layers ...gopacket.SerializableLayer) error {
-	// Set up buffer and options for serialization.
-	buf := gopacket.NewSerializeBuffer()
-	opts := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
-
-	if err := gopacket.SerializeLayers(buf, opts, layers...); err != nil {
-		return err
-	}
-
-	if err := globalHandle.WritePacketData(buf.Bytes()); err != nil {
-		return err
-	}
-
-	return nil
 }
