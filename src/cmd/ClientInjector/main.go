@@ -2,6 +2,7 @@ package main
 
 import (
 	"cmd/ClientInjector/arp"
+	"cmd/ClientInjector/dhcp4"
 	"cmd/ClientInjector/network"
 	"dhcpv4/util"
 	"flag"
@@ -16,11 +17,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var (
-	dhcpClientsByMac = make(map[uint64]*DhcpClient)
-	dhcRelay         bool
-	option90         bool
-)
+var MapClientsByMac = make(map[uint64]chan []byte)
 
 func main() {
 	var (
@@ -30,13 +27,13 @@ func main() {
 		paramNbDhcpClient = flag.Uint("nb_dhcp", 1, "Define number of dhcp client")
 		paramLogin        = flag.String("login", "%08d", "Define what is use into option90. fmt.Printf and index of dhcp client with range [0, nb_dhcp[ is used.")
 		paramPacing       = flag.Duration("pacing", 100*time.Millisecond, "Define the pacing for launch new dhcp client")
-		paramNoOpt90      = flag.Bool("no90", false, "No option 90")
+		paramNoLogin      = flag.Bool("noLogin", false, "No login (DHCPv4: option 90)")
 		paramNoRelay      = flag.Bool("noRelay", false, "No relay")
 	)
 	flag.Parse()
 
-	dhcRelay = !*paramNoRelay
-	option90 = !*paramNoOpt90
+	dhcp4.DhcRelay = !*paramNoRelay
+	dhcp4.Option90 = !*paramNoLogin
 
 	firstMacAddr, err := net.ParseMAC(*paramFirstMacAddr)
 	if err != nil {
@@ -67,26 +64,30 @@ func main() {
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	// Create each DhcpClient
-	for i := uint(0); i < *paramNbDhcpClient; i++ {
-		macAddr := make([]byte, 8)
-		util.ConvertUint64To8byte(intFirstMacAddr+uint64(i), macAddr)
-		// Reduce the byte array, as mac addr is only on 6 bytes with BigEndian format
-		macAddr = macAddr[2:]
+	{
+		var listRunnable = make([]runnable, 0, *paramNbDhcpClient)
+		// Create each DhcpClient
+		for i := 0; i < int(*paramNbDhcpClient); i++ {
+			macAddr := make([]byte, 8)
+			util.ConvertUint64To8byte(intFirstMacAddr+uint64(i), macAddr)
+			// Reduce the byte array, as mac addr is only on 6 bytes with BigEndian format
+			macAddr = macAddr[2:]
 
-		dhcpClient := CreateDhcpClient(macAddr, giaddr, fmt.Sprintf(*paramLogin, i))
+			dhcpClient, dhcpIn := dhcp4.CreateClient(macAddr, giaddr, fmt.Sprintf(*paramLogin, i))
 
-		log.Println("DhcpClient created:", dhcpClient)
-		dhcpClientsByMac[intFirstMacAddr+uint64(i)] = dhcpClient
-	}
+			log.Println("DhcpClient created:", dhcpClient)
+			MapClientsByMac[intFirstMacAddr+uint64(i)] = dhcpIn
+			listRunnable = append(listRunnable, dhcpClient)
+		}
 
-	// Listen all incoming packets
-	go dispatchIncomingPacket()
+		// Listen all incoming packets
+		go dispatchIncomingPacket()
 
-	// Launch each DhcpClient (DORA and so on)
-	for _, dhcpClient := range dhcpClientsByMac {
-		dhcpClient.run()
-		time.Sleep(*paramPacing)
+		// Launch each DhcpClient (DORA and so on)
+		for i := range listRunnable {
+			listRunnable[i].Run()
+			time.Sleep(*paramPacing)
+		}
 	}
 
 	// Block main goroutine
@@ -99,23 +100,26 @@ func dispatchIncomingPacket() {
 
 		// DHCP
 		if udpLayer := packet.Layer(layers.LayerTypeUDP); udpLayer != nil {
-			if udpLayer.(*layers.UDP).SrcPort != network.Bootps {
+			// DHCPv4
+			if udpLayer.(*layers.UDP).SrcPort == network.Bootps {
+				appLayer := packet.ApplicationLayer()
+				if appLayer == nil {
+					continue
+				}
+
+				macAddr := util.ConvertMax8byteToUint64(packet.Layer(layers.LayerTypeEthernet).(*layers.Ethernet).DstMAC)
+
+				if dhcpIn, ok := MapClientsByMac[macAddr]; ok {
+					dhcpIn <- appLayer.Payload()
+				}
+
+				// next packet
 				continue
 			}
 
-			appLayer := packet.ApplicationLayer()
-			if appLayer == nil {
-				continue
+			if udpLayer.(*layers.UDP).SrcPort == network.Dhcpv6Server {
+				// TODO DHCPv6
 			}
-
-			macAddr := util.ConvertMax8byteToUint64(packet.Layer(layers.LayerTypeEthernet).(*layers.Ethernet).DstMAC)
-
-			if dhcpClient, ok := dhcpClientsByMac[macAddr]; ok {
-				dhcpClient.ctx.dhcpIn <- appLayer.Payload()
-			}
-
-			// next packet
-			continue
 		}
 
 		// ARP
@@ -132,7 +136,9 @@ func dispatchIncomingPacket() {
 			// next packet
 			continue
 		}
-
 	}
+}
 
+type runnable interface {
+	Run()
 }

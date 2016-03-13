@@ -1,4 +1,4 @@
-package main
+package dhcp4
 
 import (
 	"log"

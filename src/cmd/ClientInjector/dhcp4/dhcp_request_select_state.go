@@ -1,4 +1,4 @@
-package main
+package dhcp4
 
 import (
 	"bytes"
@@ -61,12 +61,12 @@ func (_ requestSelectState) do(ctx *dhcpContext) iState {
 	opt61.Construct(byte(1), ctx.MacAddr)
 	request.AddOption(opt61)
 
-	if dhcRelay {
+	if DhcRelay {
 		request.SetGiAddr(ctx.giaddr)
 		request.AddOption(generateOption82(ctx.MacAddr))
 	}
 
-	if option90 {
+	if Option90 {
 		request.AddOption(generateOption90(ctx.login))
 	}
 

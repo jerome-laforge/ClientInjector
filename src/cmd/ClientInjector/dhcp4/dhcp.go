@@ -1,4 +1,4 @@
-package main
+package dhcp4
 
 import (
 	"cmd/ClientInjector/arp"
@@ -11,12 +11,17 @@ import (
 	"time"
 )
 
+var (
+	DhcRelay bool
+	Option90 bool
+)
+
 type DhcpClient struct {
 	currentState iState
 	ctx          *dhcpContext
 }
 
-func (self *DhcpClient) run() {
+func (self *DhcpClient) Run() {
 	go func() {
 		for {
 			// Let's do the job forever...
@@ -29,7 +34,7 @@ func (self DhcpClient) String() string {
 	return "mac: " + self.ctx.MacAddr.String() + " xid: 0x" + hex.EncodeToString(self.ctx.xid)
 }
 
-func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) *DhcpClient {
+func CreateClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpClient, chan []byte) {
 	d := new(DhcpClient)
 
 	arpClient, arpContext := arp.ConstructArpClient(macAddr)
@@ -48,7 +53,7 @@ func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) *Dh
 	// At beginning,  the client send a DISCOVER
 	d.currentState = discoverState{}
 
-	return d
+	return d, d.ctx.dhcpIn
 }
 
 type iState interface {

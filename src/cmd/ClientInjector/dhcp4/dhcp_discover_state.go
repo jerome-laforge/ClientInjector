@@ -1,4 +1,4 @@
-package main
+package dhcp4
 
 import (
 	"bytes"
@@ -49,12 +49,12 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 	discover.SetMacAddr(ctx.MacAddr)
 	discover.SetXid(ctx.xid)
 
-	if dhcRelay {
+	if DhcRelay {
 		discover.SetGiAddr(ctx.giaddr)
 		discover.AddOption(generateOption82(ctx.MacAddr))
 	}
 
-	if option90 {
+	if Option90 {
 		discover.AddOption(generateOption90(ctx.login))
 	}
 

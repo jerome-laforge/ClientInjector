@@ -1,4 +1,4 @@
-package main
+package dhcp4
 
 import (
 	"bytes"
@@ -17,12 +17,13 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-type requestRebindState struct{}
+type requestRenewState struct{}
 
-func (_ requestRebindState) do(ctx *dhcpContext) iState {
+func (_ requestRenewState) do(ctx *dhcpContext) iState {
+	// TODO unicast to self.ServerIp
 	ipAddr := ctx.IpAddr.Load().(net.IP)
-
 	// Set up all the layers' fields we can.
+
 	eth := &layers.Ethernet{
 		SrcMAC:       ctx.MacAddr,
 		DstMAC:       arp.HwAddrBcast,
@@ -53,17 +54,21 @@ func (_ requestRebindState) do(ctx *dhcpContext) iState {
 	opt50.Construct(util.Convert4byteToUint32(ipAddr))
 	request.AddOption(opt50)
 
+	opt54 := new(option.Option54DhcpServerIdentifier)
+	opt54.Construct(ctx.serverIp)
+	request.AddOption(opt54)
+
 	opt61 := new(option.Option61ClientIdentifier)
 	opt61.Construct(byte(1), ctx.MacAddr)
 	request.AddOption(opt61)
 
-	if dhcRelay {
-		request.SetGiAddr(ctx.giaddr)
-		request.AddOption(generateOption82(ctx.MacAddr))
+	if Option90 {
+		request.AddOption(generateOption90(ctx.login))
 	}
 
-	if option90 {
-		request.AddOption(generateOption90(ctx.login))
+	if DhcRelay && ctx.serverIp == 0 {
+		request.SetGiAddr(ctx.giaddr)
+		request.AddOption(generateOption82(ctx.MacAddr))
 	}
 
 	bootp := &layer.PayloadLayer{
@@ -73,7 +78,7 @@ func (_ requestRebindState) do(ctx *dhcpContext) iState {
 	for {
 		// send request
 		for err := network.SentPacket(eth, ipv4, udp, bootp); err != nil; {
-			log.Println(ctx.MacAddr, "REBIND: error sending request", err)
+			log.Println(ctx.MacAddr, "RENEW: error sending request", err)
 			time.Sleep(2 * time.Second)
 		}
 
@@ -87,9 +92,9 @@ func (_ requestRebindState) do(ctx *dhcpContext) iState {
 			timeout = deadline.Sub(time.Now())
 			select {
 			case <-time.After(timeout):
-				log.Println(ctx.MacAddr, "REBIND: timeout")
+				log.Println(ctx.MacAddr, "RENEW: timeout")
 
-				return timeoutRebindState{}
+				return timeoutRenewState{}
 			case payload = <-ctx.dhcpIn:
 				dp, err := dhcpv4.Parse(payload)
 				if err != nil {
@@ -99,7 +104,7 @@ func (_ requestRebindState) do(ctx *dhcpContext) iState {
 
 				if !bytes.Equal(ctx.xid, dp.GetXid()) {
 					// bug of DHCP Server ?
-					log.Println(ctx.MacAddr, fmt.Sprintf("REBIND: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(ctx.xid), hex.EncodeToString(dp.GetXid())))
+					log.Println(ctx.MacAddr, fmt.Sprintf("RENEW: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(ctx.xid), hex.EncodeToString(dp.GetXid())))
 					continue
 				}
 
@@ -107,17 +112,16 @@ func (_ requestRebindState) do(ctx *dhcpContext) iState {
 					switch msgType {
 					case option.DHCPACK:
 						ctx.t0, ctx.t1, ctx.t2 = extractAllLeaseTime(dp)
-
 						return sleepState{}
 					case option.DHCPNAK:
-						log.Println(ctx.MacAddr, "REBIND: receive NAK")
+						log.Println(ctx.MacAddr, "RENEW: receive NAK")
 						return discoverState{}
 					default:
-						log.Println(ctx.MacAddr, fmt.Sprintf("REBIND: unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
+						log.Println(ctx.MacAddr, fmt.Sprintf("RENEW: unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
 						continue
 					}
 				} else {
-					log.Println(ctx.MacAddr, "REBIND: option 53 is missing")
+					log.Println(ctx.MacAddr, "RENEW: option 53 is missing")
 					continue
 				}
 			}
