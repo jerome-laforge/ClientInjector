@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"cmd/ClientInjector/arp"
+	"cmd/ClientInjector/layer"
 	"cmd/ClientInjector/network"
 	"dhcpv4"
 	"dhcpv4/option"
@@ -57,8 +58,8 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 		discover.AddOption(generateOption90(ctx.login))
 	}
 
-	bootp := &PayloadLayer{
-		contents: discover.Raw,
+	bootp := &layer.PayloadLayer{
+		Contents: discover.Raw,
 	}
 
 	var sleep time.Duration

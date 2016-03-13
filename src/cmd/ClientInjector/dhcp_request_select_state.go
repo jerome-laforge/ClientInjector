@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"cmd/ClientInjector/arp"
+	"cmd/ClientInjector/layer"
 	"cmd/ClientInjector/network"
 	"dhcpv4"
 	"dhcpv4/option"
@@ -69,8 +70,8 @@ func (_ requestSelectState) do(ctx *dhcpContext) iState {
 		request.AddOption(generateOption90(ctx.login))
 	}
 
-	bootp := &PayloadLayer{
-		contents: request.Raw,
+	bootp := &layer.PayloadLayer{
+		Contents: request.Raw,
 	}
 
 	for {
