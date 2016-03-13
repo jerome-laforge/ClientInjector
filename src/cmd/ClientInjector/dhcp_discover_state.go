@@ -5,6 +5,7 @@ import (
 	"cmd/ClientInjector/network"
 	"dhcpv4"
 	"dhcpv4/option"
+	"dhcpv4/util"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -105,7 +106,7 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 				if msgType, err := dp.GetTypeMessage(); err == nil {
 					switch msgType {
 					case option.DHCPOFFER:
-						ctx.ipAddr.Store(dp.GetYourIp())
+						ctx.ipAddr.Store(net.IP(util.ConvertUint32ToNew4byte(dp.GetYourIp())))
 						ctx.serverIp = dp.GetNextServerIp()
 						err := ctx.arpClient.sendGratuitousARP()
 						if err != nil {

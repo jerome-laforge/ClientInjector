@@ -3,8 +3,6 @@ package main
 import (
 	"bytes"
 	"cmd/ClientInjector/network"
-	"dhcpv4/util"
-	"encoding/binary"
 	"log"
 	"net"
 	"sync/atomic"
@@ -25,7 +23,7 @@ func ConstructArpClient(macAddr net.HardwareAddr) (*ArpClient, *ArpContext) {
 	c := new(ArpClient)
 
 	c.ctx.macAddr = macAddr
-	c.ctx.ipAddr.Store(uint32(0))
+	c.ctx.ipAddr.Store(net.IPv4zero)
 	c.ctx.arpIn = make(chan *layers.ARP, 100)
 	go c.manageArpPacket()
 
@@ -41,14 +39,14 @@ func (self *ArpClient) manageArpPacket() {
 
 	for {
 		arpRcv = <-self.ctx.arpIn
-		ipAddr := self.ctx.ipAddr.Load().(uint32)
+		ipAddr := self.ctx.ipAddr.Load().(net.IP)
 
 		if !bytes.Equal(arpRcv.DstHwAddress, hwAddrBcast) && !bytes.Equal(arpRcv.DstHwAddress, self.ctx.macAddr) {
-			log.Println(self.ctx.macAddr, "Recieve ARP request for", util.ConvertUint32ToIpAddr(ipAddr), " but it is ignored because DstMacAddr is inconsistent ")
+			log.Println(self.ctx.macAddr, "Recieve ARP request for", ipAddr, " but it is ignored because DstMacAddr is inconsistent ")
 			continue
 		}
 
-		log.Println(self.ctx.macAddr, "Recieve ARP request for", util.ConvertUint32ToIpAddr(ipAddr))
+		log.Println(self.ctx.macAddr, "Recieve ARP request for", ipAddr)
 
 		eth := &layers.Ethernet{
 			SrcMAC:       self.ctx.macAddr,
@@ -63,7 +61,7 @@ func (self *ArpClient) manageArpPacket() {
 			ProtAddressSize:   4,
 			Operation:         layers.ARPReply,
 			SourceHwAddress:   self.ctx.macAddr,
-			SourceProtAddress: convertUint32ToBytes(ipAddr),
+			SourceProtAddress: ipAddr,
 			DstHwAddress:      arpRcv.SourceHwAddress,
 			DstProtAddress:    arpRcv.SourceProtAddress,
 		}
@@ -73,7 +71,7 @@ func (self *ArpClient) manageArpPacket() {
 }
 
 func (self *ArpClient) sendGratuitousARP() error {
-	ipAddr := self.ctx.ipAddr.Load().(uint32)
+	ipAddr := self.ctx.ipAddr.Load().(net.IP)
 
 	eth := &layers.Ethernet{
 		SrcMAC:       self.ctx.macAddr,
@@ -81,7 +79,6 @@ func (self *ArpClient) sendGratuitousARP() error {
 		EthernetType: layers.EthernetTypeARP,
 	}
 
-	ipAddrByteArray := convertUint32ToBytes(ipAddr)
 	arp := &layers.ARP{
 		AddrType:          layers.LinkTypeEthernet,
 		Protocol:          layers.EthernetTypeIPv4,
@@ -89,18 +86,12 @@ func (self *ArpClient) sendGratuitousARP() error {
 		ProtAddressSize:   4,
 		Operation:         layers.ARPRequest,
 		SourceHwAddress:   self.ctx.macAddr,
-		SourceProtAddress: ipAddrByteArray,
+		SourceProtAddress: ipAddr,
 		DstHwAddress:      hwAddrZero,
-		DstProtAddress:    ipAddrByteArray,
+		DstProtAddress:    ipAddr,
 	}
 
-	log.Println(self.ctx.macAddr, "Send Gratuitous ARP", util.ConvertUint32ToIpAddr(ipAddr))
+	log.Println(self.ctx.macAddr, "Send Gratuitous ARP", ipAddr)
 
 	return network.SentPacket(eth, arp)
-}
-
-func convertUint32ToBytes(i uint32) []byte {
-	b := make([]byte, 4)
-	binary.BigEndian.PutUint32(b, i)
-	return b
 }

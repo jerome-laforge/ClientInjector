@@ -5,6 +5,7 @@ import (
 	"cmd/ClientInjector/network"
 	"dhcpv4"
 	"dhcpv4/option"
+	"dhcpv4/util"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -18,7 +19,7 @@ type requestRenewState struct{}
 
 func (_ requestRenewState) do(ctx *dhcpContext) iState {
 	// TODO unicast to self.ServerIp
-	ipAddr := ctx.ipAddr.Load().(uint32)
+	ipAddr := ctx.ipAddr.Load().(net.IP)
 	// Set up all the layers' fields we can.
 
 	eth := &layers.Ethernet{
@@ -48,7 +49,7 @@ func (_ requestRenewState) do(ctx *dhcpContext) iState {
 	request.SetMacAddr(ctx.macAddr)
 
 	opt50 := new(option.Option50RequestedIpAddress)
-	opt50.Construct(ipAddr)
+	opt50.Construct(util.Convert4byteToUint32(ipAddr))
 	request.AddOption(opt50)
 
 	opt54 := new(option.Option54DhcpServerIdentifier)
@@ -63,7 +64,7 @@ func (_ requestRenewState) do(ctx *dhcpContext) iState {
 		request.AddOption(generateOption90(ctx.login))
 	}
 
-	if dhcRelay && ipAddr == 0 {
+	if dhcRelay && ctx.serverIp == 0 {
 		request.SetGiAddr(ctx.giaddr)
 		request.AddOption(generateOption82(ctx.macAddr))
 	}

@@ -2,15 +2,15 @@ package main
 
 import (
 	"bytes"
+	"cmd/ClientInjector/network"
 	"dhcpv4"
 	"dhcpv4/option"
+	"dhcpv4/util"
 	"encoding/hex"
 	"fmt"
 	"log"
 	"net"
 	"time"
-
-	"cmd/ClientInjector/network"
 
 	"github.com/google/gopacket/layers"
 )
@@ -18,7 +18,7 @@ import (
 type requestRebindState struct{}
 
 func (_ requestRebindState) do(ctx *dhcpContext) iState {
-	ipAddr := ctx.ipAddr.Load().(uint32)
+	ipAddr := ctx.ipAddr.Load().(net.IP)
 
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
@@ -48,7 +48,7 @@ func (_ requestRebindState) do(ctx *dhcpContext) iState {
 	request.SetMacAddr(ctx.macAddr)
 
 	opt50 := new(option.Option50RequestedIpAddress)
-	opt50.Construct(ipAddr)
+	opt50.Construct(util.Convert4byteToUint32(ipAddr))
 	request.AddOption(opt50)
 
 	opt61 := new(option.Option61ClientIdentifier)

@@ -14,6 +14,12 @@ func Convert4byteToUint32(b []byte) uint32 {
 	return binary.BigEndian.Uint32(b)
 }
 
+func ConvertUint32ToNew4byte(num uint32) []byte {
+	ipRaw := make([]byte, 4)
+	ConvertUint32To4byte(num, ipRaw)
+	return ipRaw
+}
+
 func ConvertUint32To4byte(num uint32, b []byte) {
 	binary.BigEndian.PutUint32(b, num)
 }

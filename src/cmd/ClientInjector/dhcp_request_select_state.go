@@ -5,6 +5,7 @@ import (
 	"cmd/ClientInjector/network"
 	"dhcpv4"
 	"dhcpv4/option"
+	"dhcpv4/util"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -17,7 +18,7 @@ import (
 type requestSelectState struct{}
 
 func (_ requestSelectState) do(ctx *dhcpContext) iState {
-	ipAddr := ctx.ipAddr.Load().(uint32)
+	ipAddr := ctx.ipAddr.Load().(net.IP)
 
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
@@ -47,7 +48,7 @@ func (_ requestSelectState) do(ctx *dhcpContext) iState {
 	request.SetMacAddr(ctx.macAddr)
 
 	opt50 := new(option.Option50RequestedIpAddress)
-	opt50.Construct(ipAddr)
+	opt50.Construct(util.Convert4byteToUint32(ipAddr))
 	request.AddOption(opt50)
 
 	opt54 := new(option.Option54DhcpServerIdentifier)
@@ -106,7 +107,7 @@ func (_ requestSelectState) do(ctx *dhcpContext) iState {
 				if msgType, err := dp.GetTypeMessage(); err == nil {
 					switch msgType {
 					case option.DHCPACK:
-						dhcpContextByIp.SetIp(ipAddr, ctx)
+						dhcpContextByIp.SetIp(util.Convert4byteToUint32(ipAddr), ctx)
 						ctx.t0, ctx.t1, ctx.t2 = extractAllLeaseTime(dp)
 						return sleepState{}
 					case option.DHCPNAK:

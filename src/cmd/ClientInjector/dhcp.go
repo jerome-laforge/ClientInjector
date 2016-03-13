@@ -65,11 +65,11 @@ type dhcpContext struct {
 }
 
 func (self *dhcpContext) resetLease() {
-	if ipAddr := self.ipAddr.Load().(uint32); ipAddr != 0 {
-		dhcpContextByIp.ResetIp(ipAddr)
+	if ipAddr := self.ipAddr.Load().(net.IP); !ipAddr.IsUnspecified() {
+		dhcpContextByIp.ResetIp(util.Convert4byteToUint32(ipAddr))
+		self.ipAddr.Store(net.IPv4zero)
 	}
 
-	self.ipAddr.Store(uint32(0))
 	self.serverIp = 0
 }
 
