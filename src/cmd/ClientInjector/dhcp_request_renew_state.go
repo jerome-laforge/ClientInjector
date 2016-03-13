@@ -42,8 +42,8 @@ func (_ requestRenewState) do(ctx *dhcpContext) iState {
 	}
 	udp.SetNetworkLayerForChecksum(ipv4)
 
-	buf := GetBuffer()
-	defer ReleaseBuffer(buf)
+	buf := network.GetBuffer()
+	defer network.ReleaseBuffer(buf)
 
 	request := new(dhcpv4.DhcpPacket)
 	request.ConstructWithPreAllocatedBuffer(buf, option.DHCPREQUEST)

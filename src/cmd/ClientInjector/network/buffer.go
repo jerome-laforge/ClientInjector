@@ -1,13 +1,12 @@
-package main
+package network
 
 import (
-	"cmd/ClientInjector/network"
 	"sync"
 )
 
 var leakyBuffer = sync.Pool{
 	New: func() interface{} {
-		return make([]byte, network.Mtu)
+		return make([]byte, Mtu)
 	},
 }
 
