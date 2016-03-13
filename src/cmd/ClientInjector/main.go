@@ -25,31 +25,34 @@ var (
 
 type DhcpContextByIp struct {
 	mutex sync.RWMutex
-	dMap  map[uint32]*dhcpContext
+	dMap  map[string]*dhcpContext
 }
 
-func (self *DhcpContextByIp) SetIp(ip uint32, dhcpContext *dhcpContext) {
+func (self *DhcpContextByIp) SetIp(ip net.IP, dhcpContext *dhcpContext) {
+	key := ip.String()
 	self.mutex.Lock()
-	dhcpContextByIp.dMap[ip] = dhcpContext
+	dhcpContextByIp.dMap[key] = dhcpContext
 	self.mutex.Unlock()
 }
 
-func (self *DhcpContextByIp) ResetIp(ip uint32) {
+func (self *DhcpContextByIp) ResetIp(ip net.IP) {
+	key := ip.String()
 	self.mutex.Lock()
-	delete(dhcpContextByIp.dMap, ip)
+	delete(dhcpContextByIp.dMap, key)
 	self.mutex.Unlock()
 }
 
-func (self *DhcpContextByIp) Get(ip uint32) (*dhcpContext, bool) {
+func (self *DhcpContextByIp) Get(ip net.IP) (*dhcpContext, bool) {
+	key := ip.String()
 	self.mutex.RLock()
-	dhcpCLient, ok := dhcpContextByIp.dMap[ip]
+	dhcpCLient, ok := dhcpContextByIp.dMap[key]
 	self.mutex.RUnlock()
 
 	return dhcpCLient, ok
 }
 
 func init() {
-	dhcpContextByIp.dMap = make(map[uint32]*dhcpContext)
+	dhcpContextByIp.dMap = make(map[string]*dhcpContext)
 }
 
 func main() {
@@ -155,7 +158,7 @@ func dispatchIncomingPacket() {
 				continue
 			}
 
-			if dhcpContext, ok := dhcpContextByIp.Get(util.Convert4byteToUint32(arpLayer.DstProtAddress)); ok {
+			if dhcpContext, ok := dhcpContextByIp.Get(arpLayer.DstProtAddress); ok {
 				dhcpContext.ArpIn <- arpLayer
 			}
 

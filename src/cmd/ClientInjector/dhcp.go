@@ -67,7 +67,7 @@ type dhcpContext struct {
 
 func (self *dhcpContext) resetLease() {
 	if ipAddr := self.IpAddr.Load().(net.IP); !ipAddr.IsUnspecified() {
-		dhcpContextByIp.ResetIp(util.Convert4byteToUint32(ipAddr))
+		dhcpContextByIp.ResetIp(ipAddr)
 		self.IpAddr.Store(net.IPv4zero)
 	}
 
