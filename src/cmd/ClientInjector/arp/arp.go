@@ -5,6 +5,7 @@ import (
 	"cmd/ClientInjector/network"
 	"log"
 	"net"
+	"strconv"
 	"sync/atomic"
 
 	"github.com/google/gopacket/layers"
@@ -58,9 +59,7 @@ func (self *ArpClient) manageArpPacket() {
 
 		arp := &layers.ARP{
 			AddrType:          layers.LinkTypeEthernet,
-			Protocol:          layers.EthernetTypeIPv4,
-			HwAddressSize:     6,
-			ProtAddressSize:   4,
+			Protocol:          getProtocolFor(ipAddr),
 			Operation:         layers.ARPReply,
 			SourceHwAddress:   self.ctx.MacAddr,
 			SourceProtAddress: ipAddr,
@@ -83,9 +82,7 @@ func (self *ArpClient) SendGratuitousARP() error {
 
 	arp := &layers.ARP{
 		AddrType:          layers.LinkTypeEthernet,
-		Protocol:          layers.EthernetTypeIPv4,
-		HwAddressSize:     6,
-		ProtAddressSize:   4,
+		Protocol:          getProtocolFor(ipAddr),
 		Operation:         layers.ARPRequest,
 		SourceHwAddress:   self.ctx.MacAddr,
 		SourceProtAddress: ipAddr,
@@ -96,4 +93,15 @@ func (self *ArpClient) SendGratuitousARP() error {
 	log.Println(self.ctx.MacAddr, "Send Gratuitous ARP", ipAddr)
 
 	return network.SentPacket(eth, arp)
+}
+
+func getProtocolFor(ipAddr net.IP) layers.EthernetType {
+	switch len(ipAddr) {
+	case net.IPv4len:
+		return layers.EthernetTypeIPv4
+	case net.IPv6len:
+		return layers.EthernetTypeIPv6
+	default:
+		panic("Unknown ipAddr " + strconv.Itoa(len(ipAddr)))
+	}
 }
