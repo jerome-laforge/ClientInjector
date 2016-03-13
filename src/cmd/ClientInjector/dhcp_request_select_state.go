@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"cmd/ClientInjector/arp"
 	"cmd/ClientInjector/network"
 	"dhcpv4"
 	"dhcpv4/option"
@@ -18,12 +19,12 @@ import (
 type requestSelectState struct{}
 
 func (_ requestSelectState) do(ctx *dhcpContext) iState {
-	ipAddr := ctx.ipAddr.Load().(net.IP)
+	ipAddr := ctx.IpAddr.Load().(net.IP)
 
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
-		SrcMAC:       ctx.macAddr,
-		DstMAC:       hwAddrBcast,
+		SrcMAC:       ctx.MacAddr,
+		DstMAC:       arp.HwAddrBcast,
 		EthernetType: layers.EthernetTypeIPv4,
 	}
 	ipv4 := &layers.IPv4{
@@ -45,7 +46,7 @@ func (_ requestSelectState) do(ctx *dhcpContext) iState {
 	request := new(dhcpv4.DhcpPacket)
 	request.ConstructWithPreAllocatedBuffer(buf, option.DHCPREQUEST)
 	request.SetXid(ctx.xid)
-	request.SetMacAddr(ctx.macAddr)
+	request.SetMacAddr(ctx.MacAddr)
 
 	opt50 := new(option.Option50RequestedIpAddress)
 	opt50.Construct(util.Convert4byteToUint32(ipAddr))
@@ -56,12 +57,12 @@ func (_ requestSelectState) do(ctx *dhcpContext) iState {
 	request.AddOption(opt54)
 
 	opt61 := new(option.Option61ClientIdentifier)
-	opt61.Construct(byte(1), ctx.macAddr)
+	opt61.Construct(byte(1), ctx.MacAddr)
 	request.AddOption(opt61)
 
 	if dhcRelay {
 		request.SetGiAddr(ctx.giaddr)
-		request.AddOption(generateOption82(ctx.macAddr))
+		request.AddOption(generateOption82(ctx.MacAddr))
 	}
 
 	if option90 {
@@ -75,7 +76,7 @@ func (_ requestSelectState) do(ctx *dhcpContext) iState {
 	for {
 		// send request
 		for err := network.SentPacket(eth, ipv4, udp, bootp); err != nil; {
-			log.Println(ctx.macAddr, "SELECT: error sending request", err)
+			log.Println(ctx.MacAddr, "SELECT: error sending request", err)
 			time.Sleep(2 * time.Second)
 		}
 
@@ -89,7 +90,7 @@ func (_ requestSelectState) do(ctx *dhcpContext) iState {
 			timeout = deadline.Sub(time.Now())
 			select {
 			case <-time.After(timeout):
-				log.Println(ctx.macAddr, "SELECT: timeout")
+				log.Println(ctx.MacAddr, "SELECT: timeout")
 				goto TIMEOUT
 			case payload = <-ctx.dhcpIn:
 				dp, err := dhcpv4.Parse(payload)
@@ -100,7 +101,7 @@ func (_ requestSelectState) do(ctx *dhcpContext) iState {
 
 				if !bytes.Equal(ctx.xid, dp.GetXid()) {
 					// bug of DHCP Server ?
-					log.Println(ctx.macAddr, fmt.Sprintf("SELECT: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(ctx.xid), hex.EncodeToString(dp.GetXid())))
+					log.Println(ctx.MacAddr, fmt.Sprintf("SELECT: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(ctx.xid), hex.EncodeToString(dp.GetXid())))
 					continue
 				}
 
@@ -111,14 +112,14 @@ func (_ requestSelectState) do(ctx *dhcpContext) iState {
 						ctx.t0, ctx.t1, ctx.t2 = extractAllLeaseTime(dp)
 						return sleepState{}
 					case option.DHCPNAK:
-						log.Println(ctx.macAddr, "SELECT: receive NAK")
+						log.Println(ctx.MacAddr, "SELECT: receive NAK")
 						return discoverState{}
 					default:
-						log.Println(ctx.macAddr, fmt.Sprintf("SELECT: unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
+						log.Println(ctx.MacAddr, fmt.Sprintf("SELECT: unexpected message [Excpected: %s] [Actual: %s]", option.DHCPACK, msgType))
 						continue
 					}
 				} else {
-					log.Println(ctx.macAddr, "SELECT: option 53 is missing")
+					log.Println(ctx.MacAddr, "SELECT: option 53 is missing")
 					continue
 				}
 			}

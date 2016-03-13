@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmd/ClientInjector/arp"
 	"dhcpv4"
 	"dhcpv4/option"
 	"dhcpv4/util"
@@ -25,13 +26,13 @@ func (self *DhcpClient) run() {
 }
 
 func (self DhcpClient) String() string {
-	return "mac: " + self.ctx.macAddr.String() + " xid: 0x" + hex.EncodeToString(self.ctx.xid)
+	return "mac: " + self.ctx.MacAddr.String() + " xid: 0x" + hex.EncodeToString(self.ctx.xid)
 }
 
 func CreateDhcpClient(macAddr net.HardwareAddr, giaddr uint32, login string) *DhcpClient {
 	d := new(DhcpClient)
 
-	arpClient, arpContext := ConstructArpClient(macAddr)
+	arpClient, arpContext := arp.ConstructArpClient(macAddr)
 
 	xid := make([]byte, 4)
 	util.ConvertUint32To4byte(rand.Uint32(), xid)
@@ -55,8 +56,8 @@ type iState interface {
 }
 
 type dhcpContext struct {
-	*ArpContext
-	arpClient        *ArpClient
+	*arp.ArpContext
+	arpClient        *arp.ArpClient
 	xid              []byte
 	serverIp, giaddr uint32
 	dhcpIn           chan []byte
@@ -65,9 +66,9 @@ type dhcpContext struct {
 }
 
 func (self *dhcpContext) resetLease() {
-	if ipAddr := self.ipAddr.Load().(net.IP); !ipAddr.IsUnspecified() {
+	if ipAddr := self.IpAddr.Load().(net.IP); !ipAddr.IsUnspecified() {
 		dhcpContextByIp.ResetIp(util.Convert4byteToUint32(ipAddr))
-		self.ipAddr.Store(net.IPv4zero)
+		self.IpAddr.Store(net.IPv4zero)
 	}
 
 	self.serverIp = 0

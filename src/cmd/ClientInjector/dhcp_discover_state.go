@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"cmd/ClientInjector/arp"
 	"cmd/ClientInjector/network"
 	"dhcpv4"
 	"dhcpv4/option"
@@ -22,8 +23,8 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
-		SrcMAC:       ctx.macAddr,
-		DstMAC:       hwAddrBcast,
+		SrcMAC:       ctx.MacAddr,
+		DstMAC:       arp.HwAddrBcast,
 		EthernetType: layers.EthernetTypeIPv4,
 	}
 	ipv4 := &layers.IPv4{
@@ -44,12 +45,12 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 
 	discover := new(dhcpv4.DhcpPacket)
 	discover.ConstructWithPreAllocatedBuffer(buf, option.DHCPDISCOVER)
-	discover.SetMacAddr(ctx.macAddr)
+	discover.SetMacAddr(ctx.MacAddr)
 	discover.SetXid(ctx.xid)
 
 	if dhcRelay {
 		discover.SetGiAddr(ctx.giaddr)
-		discover.AddOption(generateOption82(ctx.macAddr))
+		discover.AddOption(generateOption82(ctx.MacAddr))
 	}
 
 	if option90 {
@@ -66,7 +67,7 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 	for {
 		// send discover
 		for err := network.SentPacket(eth, ipv4, udp, bootp); err != nil; {
-			log.Println(ctx.macAddr, "DISCOVER: error sending discover", err)
+			log.Println(ctx.MacAddr, "DISCOVER: error sending discover", err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -88,7 +89,7 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 			timeout = deadline.Sub(time.Now())
 			select {
 			case <-time.After(timeout):
-				log.Println(ctx.macAddr, "DISCOVER: timeout", tries)
+				log.Println(ctx.MacAddr, "DISCOVER: timeout", tries)
 				goto TIMEOUT
 			case payload = <-ctx.dhcpIn:
 				dp, err := dhcpv4.Parse(payload)
@@ -99,29 +100,29 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 
 				if !bytes.Equal(ctx.xid, dp.GetXid()) {
 					// bug of DHCP Server ?
-					log.Println(ctx.macAddr, fmt.Sprintf("DISCOVER: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(ctx.xid), hex.EncodeToString(dp.GetXid())))
+					log.Println(ctx.MacAddr, fmt.Sprintf("DISCOVER: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(ctx.xid), hex.EncodeToString(dp.GetXid())))
 					continue
 				}
 
 				if msgType, err := dp.GetTypeMessage(); err == nil {
 					switch msgType {
 					case option.DHCPOFFER:
-						ctx.ipAddr.Store(net.IP(util.ConvertUint32ToNew4byte(dp.GetYourIp())))
+						ctx.IpAddr.Store(net.IP(util.ConvertUint32ToNew4byte(dp.GetYourIp())))
 						ctx.serverIp = dp.GetNextServerIp()
-						err := ctx.arpClient.sendGratuitousARP()
+						err := ctx.arpClient.SendGratuitousARP()
 						if err != nil {
-							fmt.Println(ctx.macAddr, "send gratuitousARP error", err)
+							fmt.Println(ctx.MacAddr, "send gratuitousARP error", err)
 						}
 
 						ctx.t0, ctx.t1, ctx.t2 = extractAllLeaseTime(dp)
 
 						return requestSelectState{}
 					default:
-						log.Println(ctx.macAddr, fmt.Sprintf("DISCOVER: Unexcpected message [Excpected: %s] [Actual: %s]", option.DHCPDISCOVER, msgType))
+						log.Println(ctx.MacAddr, fmt.Sprintf("DISCOVER: Unexcpected message [Excpected: %s] [Actual: %s]", option.DHCPDISCOVER, msgType))
 						continue
 					}
 				} else {
-					log.Println(ctx.macAddr, "DISCOVER: Option 53 is missing")
+					log.Println(ctx.MacAddr, "DISCOVER: Option 53 is missing")
 					continue
 				}
 			}

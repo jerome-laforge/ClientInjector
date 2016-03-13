@@ -9,9 +9,9 @@ import (
 type sleepState struct{}
 
 func (_ sleepState) do(ctx *dhcpContext) iState {
-	ipAddr := ctx.ipAddr.Load().(net.IP)
+	ipAddr := ctx.IpAddr.Load().(net.IP)
 
-	log.Println(ctx.macAddr, "ip", ipAddr, "sleep until t1", ctx.t1)
+	log.Println(ctx.MacAddr, "ip", ipAddr, "sleep until t1", ctx.t1)
 	time.Sleep(ctx.t1.Sub(time.Now()))
 
 	return requestRenewState{}
@@ -21,7 +21,7 @@ type timeoutRenewState struct{}
 
 func (_ timeoutRenewState) do(ctx *dhcpContext) iState {
 	var (
-		ipAddr    = ctx.ipAddr.Load().(net.IP)
+		ipAddr    = ctx.IpAddr.Load().(net.IP)
 		now       = time.Now()
 		timeout   = ctx.t2.Sub(now) / 2
 		nextState iState
@@ -34,7 +34,7 @@ func (_ timeoutRenewState) do(ctx *dhcpContext) iState {
 		nextState = requestRenewState{}
 	}
 
-	log.Println(ctx.macAddr, "ip", ipAddr, "sleep until ", now.Add(timeout))
+	log.Println(ctx.MacAddr, "ip", ipAddr, "sleep until ", now.Add(timeout))
 	time.Sleep(timeout)
 	return nextState
 }
@@ -43,7 +43,7 @@ type timeoutRebindState struct{}
 
 func (_ timeoutRebindState) do(ctx *dhcpContext) iState {
 	var (
-		ipAddr    = ctx.ipAddr.Load().(net.IP)
+		ipAddr    = ctx.IpAddr.Load().(net.IP)
 		now       = time.Now()
 		timeout   = ctx.t0.Sub(now) / 2
 		nextState iState
@@ -58,7 +58,7 @@ func (_ timeoutRebindState) do(ctx *dhcpContext) iState {
 		nextState = requestRebindState{}
 	}
 
-	log.Println(ctx.macAddr, "ip", ipAddr, "sleep until ", now.Add(timeout))
+	log.Println(ctx.MacAddr, "ip", ipAddr, "sleep until ", now.Add(timeout))
 	time.Sleep(timeout)
 	return nextState
 }

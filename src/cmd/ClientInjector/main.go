@@ -156,7 +156,7 @@ func dispatchIncomingPacket() {
 			}
 
 			if dhcpContext, ok := dhcpContextByIp.Get(util.Convert4byteToUint32(arpLayer.DstProtAddress)); ok {
-				dhcpContext.arpIn <- arpLayer
+				dhcpContext.ArpIn <- arpLayer
 			}
 
 			// next packet

@@ -6,6 +6,26 @@
 			"repository": "https://github.com/google/gopacket",
 			"revision": "e5560fd61189f831df0e6af1259957b83904451a",
 			"branch": "master"
+		},
+		{
+			"importpath": "github.com/mdlayher/dhcp6",
+			"repository": "https://github.com/mdlayher/dhcp6",
+			"revision": "8b0169560f19dd3bbb080cddba4fcc52dfae79ab",
+			"branch": "master"
+		},
+		{
+			"importpath": "golang.org/x/net/internal/iana",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "e7da8edaa52631091740908acaf2c2d4c9b3ce90",
+			"branch": "master",
+			"path": "/internal/iana"
+		},
+		{
+			"importpath": "golang.org/x/net/ipv6",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "e7da8edaa52631091740908acaf2c2d4c9b3ce90",
+			"branch": "master",
+			"path": "/ipv6"
 		}
 	]
 }

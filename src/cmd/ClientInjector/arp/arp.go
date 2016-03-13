@@ -1,4 +1,4 @@
-package main
+package arp
 
 import (
 	"bytes"
@@ -10,21 +10,23 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var hwAddrBcast = net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
-var hwAddrZero = net.HardwareAddr{0, 0, 0, 0, 0, 0}
+var (
+	HwAddrBcast = net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	HwAddrZero  = net.HardwareAddr{0, 0, 0, 0, 0, 0}
+)
 
 type ArpContext struct {
-	macAddr net.HardwareAddr
-	ipAddr  atomic.Value
-	arpIn   chan *layers.ARP
+	MacAddr net.HardwareAddr
+	IpAddr  atomic.Value
+	ArpIn   chan *layers.ARP
 }
 
 func ConstructArpClient(macAddr net.HardwareAddr) (*ArpClient, *ArpContext) {
 	c := new(ArpClient)
 
-	c.ctx.macAddr = macAddr
-	c.ctx.ipAddr.Store(net.IPv4zero)
-	c.ctx.arpIn = make(chan *layers.ARP, 100)
+	c.ctx.MacAddr = macAddr
+	c.ctx.IpAddr.Store(net.IPv4zero)
+	c.ctx.ArpIn = make(chan *layers.ARP, 100)
 	go c.manageArpPacket()
 
 	return c, &c.ctx
@@ -38,18 +40,18 @@ func (self *ArpClient) manageArpPacket() {
 	var arpRcv *layers.ARP
 
 	for {
-		arpRcv = <-self.ctx.arpIn
-		ipAddr := self.ctx.ipAddr.Load().(net.IP)
+		arpRcv = <-self.ctx.ArpIn
+		ipAddr := self.ctx.IpAddr.Load().(net.IP)
 
-		if !bytes.Equal(arpRcv.DstHwAddress, hwAddrBcast) && !bytes.Equal(arpRcv.DstHwAddress, self.ctx.macAddr) {
-			log.Println(self.ctx.macAddr, "Recieve ARP request for", ipAddr, " but it is ignored because DstMacAddr is inconsistent ")
+		if !bytes.Equal(arpRcv.DstHwAddress, HwAddrBcast) && !bytes.Equal(arpRcv.DstHwAddress, self.ctx.MacAddr) {
+			log.Println(self.ctx.MacAddr, "Recieve ARP request for", ipAddr, " but it is ignored because DstMacAddr is inconsistent ")
 			continue
 		}
 
-		log.Println(self.ctx.macAddr, "Recieve ARP request for", ipAddr)
+		log.Println(self.ctx.MacAddr, "Recieve ARP request for", ipAddr)
 
 		eth := &layers.Ethernet{
-			SrcMAC:       self.ctx.macAddr,
+			SrcMAC:       self.ctx.MacAddr,
 			DstMAC:       arpRcv.SourceHwAddress,
 			EthernetType: layers.EthernetTypeARP,
 		}
@@ -60,7 +62,7 @@ func (self *ArpClient) manageArpPacket() {
 			HwAddressSize:     6,
 			ProtAddressSize:   4,
 			Operation:         layers.ARPReply,
-			SourceHwAddress:   self.ctx.macAddr,
+			SourceHwAddress:   self.ctx.MacAddr,
 			SourceProtAddress: ipAddr,
 			DstHwAddress:      arpRcv.SourceHwAddress,
 			DstProtAddress:    arpRcv.SourceProtAddress,
@@ -70,12 +72,12 @@ func (self *ArpClient) manageArpPacket() {
 	}
 }
 
-func (self *ArpClient) sendGratuitousARP() error {
-	ipAddr := self.ctx.ipAddr.Load().(net.IP)
+func (self *ArpClient) SendGratuitousARP() error {
+	ipAddr := self.ctx.IpAddr.Load().(net.IP)
 
 	eth := &layers.Ethernet{
-		SrcMAC:       self.ctx.macAddr,
-		DstMAC:       hwAddrBcast,
+		SrcMAC:       self.ctx.MacAddr,
+		DstMAC:       HwAddrBcast,
 		EthernetType: layers.EthernetTypeARP,
 	}
 
@@ -85,13 +87,13 @@ func (self *ArpClient) sendGratuitousARP() error {
 		HwAddressSize:     6,
 		ProtAddressSize:   4,
 		Operation:         layers.ARPRequest,
-		SourceHwAddress:   self.ctx.macAddr,
+		SourceHwAddress:   self.ctx.MacAddr,
 		SourceProtAddress: ipAddr,
-		DstHwAddress:      hwAddrZero,
+		DstHwAddress:      HwAddrZero,
 		DstProtAddress:    ipAddr,
 	}
 
-	log.Println(self.ctx.macAddr, "Send Gratuitous ARP", ipAddr)
+	log.Println(self.ctx.MacAddr, "Send Gratuitous ARP", ipAddr)
 
 	return network.SentPacket(eth, arp)
 }
