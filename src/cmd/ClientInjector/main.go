@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmd/ClientInjector/arp"
 	"cmd/ClientInjector/network"
 	"dhcpv4/util"
 	"flag"
@@ -10,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof"
-	"sync"
 	"time"
 
 	"github.com/google/gopacket/layers"
@@ -20,40 +20,7 @@ var (
 	dhcpClientsByMac = make(map[uint64]*DhcpClient)
 	dhcRelay         bool
 	option90         bool
-	dhcpContextByIp  DhcpContextByIp
 )
-
-type DhcpContextByIp struct {
-	mutex sync.RWMutex
-	dMap  map[string]*dhcpContext
-}
-
-func (self *DhcpContextByIp) SetIp(ip net.IP, dhcpContext *dhcpContext) {
-	key := ip.String()
-	self.mutex.Lock()
-	dhcpContextByIp.dMap[key] = dhcpContext
-	self.mutex.Unlock()
-}
-
-func (self *DhcpContextByIp) ResetIp(ip net.IP) {
-	key := ip.String()
-	self.mutex.Lock()
-	delete(dhcpContextByIp.dMap, key)
-	self.mutex.Unlock()
-}
-
-func (self *DhcpContextByIp) Get(ip net.IP) (*dhcpContext, bool) {
-	key := ip.String()
-	self.mutex.RLock()
-	dhcpCLient, ok := dhcpContextByIp.dMap[key]
-	self.mutex.RUnlock()
-
-	return dhcpCLient, ok
-}
-
-func init() {
-	dhcpContextByIp.dMap = make(map[string]*dhcpContext)
-}
 
 func main() {
 	var (
@@ -158,8 +125,8 @@ func dispatchIncomingPacket() {
 				continue
 			}
 
-			if dhcpContext, ok := dhcpContextByIp.Get(arpLayer.DstProtAddress); ok {
-				dhcpContext.ArpIn <- arpLayer
+			if arpIn, ok := arp.MapArpByIp.Lookup(arpLayer.DstProtAddress); ok {
+				arpIn <- arpLayer
 			}
 
 			// next packet

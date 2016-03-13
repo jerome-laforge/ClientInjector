@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"sync"
 	"sync/atomic"
 
 	"github.com/google/gopacket/layers"
@@ -14,7 +15,40 @@ import (
 var (
 	HwAddrBcast = net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 	HwAddrZero  = net.HardwareAddr{0, 0, 0, 0, 0, 0}
+	MapArpByIp  ArpInByIp
 )
+
+type ArpInByIp struct {
+	mutex    sync.RWMutex
+	arpInMap map[string]chan *layers.ARP
+}
+
+func (self *ArpInByIp) Set(ip net.IP, inArp chan *layers.ARP) {
+	key := ip.String()
+	self.mutex.Lock()
+	MapArpByIp.arpInMap[key] = inArp
+	self.mutex.Unlock()
+}
+
+func (self *ArpInByIp) Reset(ip net.IP) {
+	key := ip.String()
+	self.mutex.Lock()
+	delete(MapArpByIp.arpInMap, key)
+	self.mutex.Unlock()
+}
+
+func (self *ArpInByIp) Lookup(ip net.IP) (chan *layers.ARP, bool) {
+	key := ip.String()
+	self.mutex.RLock()
+	inArp, ok := MapArpByIp.arpInMap[key]
+	self.mutex.RUnlock()
+
+	return inArp, ok
+}
+
+func init() {
+	MapArpByIp.arpInMap = make(map[string]chan *layers.ARP)
+}
 
 type ArpContext struct {
 	MacAddr net.HardwareAddr

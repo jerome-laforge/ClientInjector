@@ -109,7 +109,7 @@ func (_ requestSelectState) do(ctx *dhcpContext) iState {
 				if msgType, err := dp.GetTypeMessage(); err == nil {
 					switch msgType {
 					case option.DHCPACK:
-						dhcpContextByIp.SetIp(ipAddr, ctx)
+						arp.MapArpByIp.Set(ipAddr, ctx.ArpIn)
 						ctx.t0, ctx.t1, ctx.t2 = extractAllLeaseTime(dp)
 						return sleepState{}
 					case option.DHCPNAK:
