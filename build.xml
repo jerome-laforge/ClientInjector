@@ -73,8 +73,8 @@
 		<echo message="!!!!!SO CLONE GB FROM GITHUB, PLEASE WAIT!!!!!"/>
 		<exec executable="go" logerror="true">
 			<env key="GOPATH" value="${GO-TOOLS}"/>
-			<env key="http_proxy" value="${http_proxy}"/>
-			<env key="https_proxy" value="${https_proxy}"/>
+			<env key="http_proxy" value="${env.http_proxy}"/>
+			<env key="https_proxy" value="${env.https_proxy}"/>
 			<arg value="get"/>
 			<arg value="github.com/constabulary/gb/..."/>
 		</exec>
