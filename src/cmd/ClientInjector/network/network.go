@@ -56,11 +56,7 @@ func SentPacket(layers ...gopacket.SerializableLayer) error {
 		return err
 	}
 
-	if err := pcapHandle.WritePacketData(buf.Bytes()); err != nil {
-		return err
-	}
-
-	return nil
+	return pcapHandle.WritePacketData(buf.Bytes())
 }
 
 func NextPacket() gopacket.Packet {
