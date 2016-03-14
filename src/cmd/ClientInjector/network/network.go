@@ -1,7 +1,6 @@
 package network
 
 import (
-	"fmt"
 	"net"
 	"sync"
 
@@ -17,7 +16,7 @@ var (
 	once         sync.Once
 )
 
-func OpenPcapHandle(ifaceName string) error {
+func OpenPcapHandle(ifaceName string, BPFilter string) error {
 	// Get interfaces.
 	iface, err := net.InterfaceByName(ifaceName)
 	if err != nil {
@@ -30,7 +29,9 @@ func OpenPcapHandle(ifaceName string) error {
 		return err
 	}
 
-	pcapHandle.SetBPFFilter(fmt.Sprintf("arp or port %v", Bootps))
+	if BPFilter != "" {
+		pcapHandle.SetBPFFilter(BPFilter)
+	}
 
 	return nil
 

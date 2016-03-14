@@ -44,7 +44,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err = network.OpenPcapHandle(*paramIfaceName); err != nil {
+	if err = network.OpenPcapHandle(*paramIfaceName, fmt.Sprintf("arp or port %v", network.Bootps)); err != nil {
 		log.Fatal(err)
 	}
 	defer network.Close()
