@@ -17,8 +17,16 @@ import (
 var IPv6DHCPv6 = net.IP{0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01, 0, 0x02}
 
 func main() {
-	paramIfaceName := flag.String("eth", "eth0", "Define on which interface the customer will bind")
+	var (
+		paramIfaceName    = flag.String("eth", "eth0", "Define on which interface the customer will bind")
+		paramFirstMacAddr = flag.String("mac", "00:00:13:11:19:77", "First mac address use for the first client (incremented by one for each next clients)")
+	)
 	flag.Parse()
+
+	firstMacAddr, err := net.ParseMAC(*paramFirstMacAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	packet := &dhcp6.Packet{
 		MessageType: dhcp6.MessageTypeSolicit,
@@ -33,7 +41,8 @@ func main() {
 		packet.TransactionID[i] = byte(r>>uint(i)) & 0xFF
 	}
 
-	packet.Options.Add(dhcp6.OptionElapsedTime, dhcp6.ElapsedTime(time.Second))
+	packet.Options.Add(dhcp6.OptionClientID, dhcp6.NewDUIDLL(1, firstMacAddr))
+	packet.Options.Add(dhcp6.OptionElapsedTime, dhcp6.ElapsedTime(0))
 
 	ba, err := packet.MarshalBinary()
 	if err != nil {
