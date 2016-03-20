@@ -66,6 +66,9 @@ func main() {
 	relayOption.SetClientServerMessage(packet)
 	relayMsg.Options.Add(dhcp6.OptionRelayMsg, relayOption)
 
+	interfaceId := dhcp6.RelayMessageOption([]byte("interfaceId"))
+	relayMsg.Options.Add(dhcp6.OptionInterfaceID, &interfaceId)
+
 	ba, err := relayMsg.MarshalBinary()
 	if err != nil {
 		log.Fatal(err)
