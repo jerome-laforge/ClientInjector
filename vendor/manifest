@@ -8,10 +8,10 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/mdlayher/dhcp6",
-			"repository": "https://github.com/mdlayher/dhcp6",
-			"revision": "8b0169560f19dd3bbb080cddba4fcc52dfae79ab",
-			"branch": "master"
+			"importpath": "github.com/jerome-laforge/dhcp6",
+			"repository": "https://github.com/jerome-laforge/dhcp6",
+			"revision": "fd167f201c59f22006ef238aeec9f5d443b3272d",
+			"branch": "repo-jerome-laforge"
 		},
 		{
 			"importpath": "golang.org/x/net/internal/iana",

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mdlayher/dhcp6"
+	"github.com/jerome-laforge/dhcp6"
 )
 
 // TestRecorder verifies that a Recorder properly captures information

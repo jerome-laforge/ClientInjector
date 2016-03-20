@@ -2,7 +2,7 @@
 package dhcp6test
 
 import (
-	"github.com/mdlayher/dhcp6"
+	"github.com/jerome-laforge/dhcp6"
 )
 
 // Recorder is a dhcp6.ResponseSender which captures a response's message type and

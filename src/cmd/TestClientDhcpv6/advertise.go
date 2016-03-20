@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/google/gopacket/layers"
-	"github.com/mdlayher/dhcp6"
+	"github.com/jerome-laforge/dhcp6"
 )
 
 var IPv6DHCPv6 = net.IP{0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01, 0, 0x02}
@@ -28,6 +28,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// ClientServer Message
 	packet := &dhcp6.Packet{
 		MessageType: dhcp6.MessageTypeSolicit,
 		Options:     make(map[dhcp6.OptionCode][][]byte),
@@ -44,7 +45,28 @@ func main() {
 	packet.Options.Add(dhcp6.OptionClientID, dhcp6.NewDUIDLL(1, firstMacAddr))
 	packet.Options.Add(dhcp6.OptionElapsedTime, dhcp6.ElapsedTime(0))
 
-	ba, err := packet.MarshalBinary()
+	// RelayMessage
+	relayMsg := &dhcp6.RelayMessage{
+		MessageType: dhcp6.MessageTypeRelayForw,
+		Options:     make(map[dhcp6.OptionCode][][]byte),
+	}
+
+	var count byte
+	for i := range relayMsg.LinkAddress {
+		relayMsg.LinkAddress[i] = count
+		count++
+	}
+
+	for i := range relayMsg.PeerAddress {
+		relayMsg.PeerAddress[i] = count
+		count++
+	}
+
+	relayOption := new(dhcp6.RelayMessageOption)
+	relayOption.SetClientServerMessage(packet)
+	relayMsg.Options.Add(dhcp6.OptionRelayMsg, relayOption)
+
+	ba, err := relayMsg.MarshalBinary()
 	if err != nil {
 		log.Fatal(err)
 	}
