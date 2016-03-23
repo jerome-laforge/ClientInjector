@@ -78,7 +78,7 @@ func main() {
 
 	// Set up all the layers' fields we can.
 	eth := &layers.Ethernet{
-		SrcMAC:       net.HardwareAddr{0x00, 0x00, 0x13, 0x11, 0x19, 0x77},
+		SrcMAC:       firstMacAddr,
 		DstMAC:       arp.HwAddrBcast,
 		EthernetType: layers.EthernetTypeIPv6,
 	}
