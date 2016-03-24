@@ -50,8 +50,8 @@ func (_ timeoutRebindState) do(ctx *dhcpContext) iState {
 	)
 
 	if timeout < time.Minute {
-		// lease will be expired because DHCP Clint didn't receive ACK for all its REQUEST.
-		// DHCP Client will sent DISCOVER
+		// lease will be expired because DHCP Client didn't receive ACK for all its REQUEST.
+		// DHCP Client will sent DISCOVER at the end of its lease.
 		timeout = ctx.t0.Sub(now)
 		nextState = discoverState{}
 	} else {
