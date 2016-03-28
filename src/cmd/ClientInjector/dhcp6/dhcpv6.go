@@ -2,6 +2,8 @@ package dhcp6
 
 import (
 	"cmd/ClientInjector/arp"
+	"encoding/hex"
+	"math/rand"
 	"net"
 	"time"
 )
@@ -34,7 +36,6 @@ func (self *dhcp6Context) resetLease() {
 
 func CreateClientv6(macAddr net.HardwareAddr, interfaceID, login string) (*Dhcpv6Client, chan []byte) {
 	d := new(Dhcpv6Client)
-	//TODO generate xid
 
 	arpClient, arpContext := arp.ConstructArpClient(macAddr)
 	d.ctx = &dhcp6Context{
@@ -44,6 +45,7 @@ func CreateClientv6(macAddr net.HardwareAddr, interfaceID, login string) (*Dhcpv
 		interfaceID: interfaceID,
 		login:       login,
 	}
+	rand.Read(d.ctx.xid[:])
 
 	// At beginning,  the client send a SOLICIT
 	d.currentState = solicitState{}
@@ -63,4 +65,8 @@ func (self *Dhcpv6Client) Run() {
 			self.currentState = self.currentState.do(self.ctx)
 		}
 	}()
+}
+
+func (self *Dhcpv6Client) String() string {
+	return "mac: " + self.ctx.MacAddr.String() + " xid: 0x" + hex.EncodeToString(self.ctx.xid[:])
 }

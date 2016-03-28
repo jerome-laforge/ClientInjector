@@ -100,6 +100,7 @@ func (self solicitState) do(ctx *dhcp6Context) iState {
 				goto TIMEOUT
 			case payload = <-ctx.dhcpIn:
 				// TODO Manage rcv ADVERTISE
+				log.Println("SOLICIT: rcv len =", len(payload))
 				return nil
 			}
 		}

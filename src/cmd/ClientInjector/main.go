@@ -3,6 +3,7 @@ package main
 import (
 	"cmd/ClientInjector/arp"
 	"cmd/ClientInjector/dhcp4"
+	"cmd/ClientInjector/dhcp6"
 	"cmd/ClientInjector/network"
 	"dhcpv4/util"
 	"flag"
@@ -17,7 +18,11 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-var MapClientsByMac = make(map[uint64]chan []byte)
+var MapClientsByMac = make(map[uint64]DhcpClientv4v6)
+
+type DhcpClientv4v6 struct {
+	v4, v6 chan []byte
+}
 
 func main() {
 	var (
@@ -72,12 +77,20 @@ func main() {
 			util.ConvertUint64To8byte(intFirstMacAddr+uint64(i), macAddr)
 			// Reduce the byte array, as mac addr is only on 6 bytes with BigEndian format
 			macAddr = macAddr[2:]
+			login := fmt.Sprintf(*paramLogin, i)
 
-			dhcpClient, dhcpIn := dhcp4.CreateClient(macAddr, giaddr, fmt.Sprintf(*paramLogin, i))
+			dhcpv4Client, inv4 := dhcp4.CreateClient(macAddr, giaddr, login)
+			log.Println("DHCPv4 Client created:", dhcpv4Client)
+			listRunnable = append(listRunnable, dhcpv4Client)
 
-			log.Println("DhcpClient created:", dhcpClient)
-			MapClientsByMac[intFirstMacAddr+uint64(i)] = dhcpIn
-			listRunnable = append(listRunnable, dhcpClient)
+			dhcpv6Client, inv6 := dhcp6.CreateClientv6(macAddr, "interfaceId", login)
+			log.Println("DHCPv6 Client created:", dhcpv6Client)
+			listRunnable = append(listRunnable, dhcpv6Client)
+
+			MapClientsByMac[intFirstMacAddr+uint64(i)] = DhcpClientv4v6{
+				v4: inv4,
+				v6: inv6,
+			}
 		}
 
 		// Listen all incoming packets
@@ -109,8 +122,8 @@ func dispatchIncomingPacket() {
 
 				macAddr := util.ConvertMax8byteToUint64(packet.Layer(layers.LayerTypeEthernet).(*layers.Ethernet).DstMAC)
 
-				if dhcpIn, ok := MapClientsByMac[macAddr]; ok {
-					dhcpIn <- appLayer.Payload()
+				if dhcpClientv4v6, ok := MapClientsByMac[macAddr]; ok {
+					dhcpClientv4v6.v4 <- appLayer.Payload()
 				}
 
 				// next packet
@@ -118,7 +131,19 @@ func dispatchIncomingPacket() {
 			}
 
 			if udpLayer.(*layers.UDP).SrcPort == network.Dhcpv6Server {
-				// TODO DHCPv6
+				appLayer := packet.ApplicationLayer()
+				if appLayer == nil {
+					continue
+				}
+
+				macAddr := util.ConvertMax8byteToUint64(packet.Layer(layers.LayerTypeEthernet).(*layers.Ethernet).DstMAC)
+
+				if dhcpClientv4v6, ok := MapClientsByMac[macAddr]; ok {
+					dhcpClientv4v6.v6 <- appLayer.Payload()
+				}
+
+				// next packet
+				continue
 			}
 		}
 
