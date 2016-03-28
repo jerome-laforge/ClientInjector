@@ -4,7 +4,6 @@ import (
 	"cmd/ClientInjector/arp"
 	"dhcpv4"
 	"dhcpv4/option"
-	"dhcpv4/util"
 	"encoding/hex"
 	"math/rand"
 	"net"
@@ -40,7 +39,7 @@ func CreateClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpC
 	arpClient, arpContext := arp.ConstructArpClient(macAddr)
 
 	xid := make([]byte, 4)
-	util.ConvertUint32To4byte(rand.Uint32(), xid)
+	rand.Read(xid)
 	d.ctx = &dhcpContext{
 		xid:        xid,
 		dhcpIn:     make(chan []byte, 100),
