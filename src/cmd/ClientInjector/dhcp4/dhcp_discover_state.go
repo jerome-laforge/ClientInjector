@@ -62,8 +62,10 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 		Contents: discover.Raw,
 	}
 
-	var sleep time.Duration
-	var tries uint = 1
+	var (
+		sleep time.Duration
+		tries uint = 1
+	)
 
 	for {
 		// send discover
