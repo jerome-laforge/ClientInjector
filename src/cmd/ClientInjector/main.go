@@ -83,7 +83,7 @@ func main() {
 			log.Println("DHCPv4 Client created:", dhcpv4Client)
 			listRunnable = append(listRunnable, dhcpv4Client)
 
-			dhcpv6Client, inv6 := dhcp6.CreateClientv6(macAddr, "interfaceId", login)
+			dhcpv6Client, inv6 := dhcp6.CreateClientv6(macAddr, *paramGiADDR, login)
 			log.Println("DHCPv6 Client created:", dhcpv6Client)
 			listRunnable = append(listRunnable, dhcpv6Client)
 
