@@ -63,7 +63,7 @@ func ConstructArpClient(macAddr net.HardwareAddr, isForIpv4 bool) (*ArpClient, *
 	if isForIpv4 {
 		c.ctx.IpAddr.Store(net.IPv4zero)
 	} else {
-		c.ctx.IpAddr.Store(net.IPv6zero)
+		c.ctx.IpAddr.Store(net.IPv6unspecified)
 	}
 	c.ctx.ArpIn = make(chan *layers.ARP, 100)
 	go c.manageArpPacket()
