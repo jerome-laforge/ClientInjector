@@ -30,7 +30,7 @@ func (self *DhcpClient) Run() {
 }
 
 func (self DhcpClient) String() string {
-	return "mac: " + self.ctx.MacAddr.String() + " xid: 0x" + hex.EncodeToString(self.ctx.xid)
+	return "mac: " + self.ctx.MacAddr.String() + " xid: 0x" + hex.EncodeToString(self.ctx.xid[:])
 }
 
 func CreateClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpClient, chan []byte) {
@@ -38,16 +38,15 @@ func CreateClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpC
 
 	arpClient, arpContext := arp.ConstructArpClient(macAddr)
 
-	xid := make([]byte, 4)
-	rand.Read(xid)
 	d.ctx = &dhcpContext{
-		xid:        xid,
 		dhcpIn:     make(chan []byte, 100),
 		arpClient:  arpClient,
 		ArpContext: arpContext,
 		giaddr:     giaddr,
 		login:      login,
 	}
+
+	rand.Read(d.ctx.xid[:])
 
 	// At beginning,  the client send a DISCOVER
 	d.currentState = discoverState{}
@@ -62,7 +61,7 @@ type iState interface {
 type dhcpContext struct {
 	*arp.ArpContext
 	arpClient        *arp.ArpClient
-	xid              []byte
+	xid              [4]byte
 	serverIp, giaddr uint32
 	dhcpIn           chan []byte
 	t0, t1, t2       time.Time
@@ -70,12 +69,13 @@ type dhcpContext struct {
 }
 
 func (self *dhcpContext) resetLease() {
+	self.serverIp = 0
+
 	if ipAddr := self.IpAddr.Load().(net.IP); !ipAddr.IsUnspecified() {
+		rand.Read(self.xid[:])
 		arp.MapArpByIp.Reset(ipAddr)
 		self.IpAddr.Store(net.IPv4zero)
 	}
-
-	self.serverIp = 0
 }
 
 func extractAllLeaseTime(dp *dhcpv4.DhcpPacket) (t0, t1, t2 time.Time) {

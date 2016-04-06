@@ -47,7 +47,7 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 	discover := new(dhcpv4.DhcpPacket)
 	discover.ConstructWithPreAllocatedBuffer(buf, option.DHCPDISCOVER)
 	discover.SetMacAddr(ctx.MacAddr)
-	discover.SetXid(ctx.xid)
+	discover.SetXid(ctx.xid[:])
 
 	if DhcRelay {
 		discover.SetGiAddr(ctx.giaddr)
@@ -101,9 +101,9 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 					continue
 				}
 
-				if !bytes.Equal(ctx.xid, dp.GetXid()) {
+				if !bytes.Equal(ctx.xid[:], dp.GetXid()) {
 					// bug of DHCP Server ?
-					log.Println(ctx.MacAddr, fmt.Sprintf("DISCOVER: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(ctx.xid), hex.EncodeToString(dp.GetXid())))
+					log.Println(ctx.MacAddr, fmt.Sprintf("DISCOVER: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(ctx.xid[:]), hex.EncodeToString(dp.GetXid())))
 					continue
 				}
 

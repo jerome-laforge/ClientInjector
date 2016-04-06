@@ -46,7 +46,7 @@ func (_ requestRebindState) do(ctx *dhcpContext) iState {
 
 	request := new(dhcpv4.DhcpPacket)
 	request.ConstructWithPreAllocatedBuffer(buf, option.DHCPREQUEST)
-	request.SetXid(ctx.xid)
+	request.SetXid(ctx.xid[:])
 	request.SetMacAddr(ctx.MacAddr)
 
 	opt50 := new(option.Option50RequestedIpAddress)
@@ -97,9 +97,9 @@ func (_ requestRebindState) do(ctx *dhcpContext) iState {
 					continue
 				}
 
-				if !bytes.Equal(ctx.xid, dp.GetXid()) {
+				if !bytes.Equal(ctx.xid[:], dp.GetXid()) {
 					// bug of DHCP Server ?
-					log.Println(ctx.MacAddr, fmt.Sprintf("REBIND: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(ctx.xid), hex.EncodeToString(dp.GetXid())))
+					log.Println(ctx.MacAddr, fmt.Sprintf("REBIND: unexpected xid [Expected: 0x%v] [Actual: 0x%v]", hex.EncodeToString(ctx.xid[:]), hex.EncodeToString(dp.GetXid())))
 					continue
 				}
 
