@@ -37,7 +37,7 @@ func (self DhcpClient) String() string {
 func CreateClient(macAddr net.HardwareAddr, giaddr uint32, login string) (*DhcpClient, chan []byte) {
 	d := new(DhcpClient)
 
-	arpClient, arpContext := arp.ConstructArpClient(macAddr)
+	arpClient, arpContext := arp.ConstructArpClient(macAddr, true)
 
 	xid := make([]byte, 4)
 	util.ConvertUint32To4byte(rand.Uint32(), xid)

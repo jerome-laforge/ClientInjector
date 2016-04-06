@@ -56,11 +56,15 @@ type ArpContext struct {
 	ArpIn   chan *layers.ARP
 }
 
-func ConstructArpClient(macAddr net.HardwareAddr) (*ArpClient, *ArpContext) {
+func ConstructArpClient(macAddr net.HardwareAddr, isForIpv4 bool) (*ArpClient, *ArpContext) {
 	c := new(ArpClient)
 
 	c.ctx.MacAddr = macAddr
-	c.ctx.IpAddr.Store(net.IPv4zero)
+	if isForIpv4 {
+		c.ctx.IpAddr.Store(net.IPv4zero)
+	} else {
+		c.ctx.IpAddr.Store(net.IPv6zero)
+	}
 	c.ctx.ArpIn = make(chan *layers.ARP, 100)
 	go c.manageArpPacket()
 

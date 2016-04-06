@@ -37,7 +37,7 @@ func (self *dhcp6Context) resetLease() {
 func CreateClientv6(macAddr net.HardwareAddr, interfaceID, login string) (*Dhcpv6Client, chan []byte) {
 	d := new(Dhcpv6Client)
 
-	arpClient, arpContext := arp.ConstructArpClient(macAddr)
+	arpClient, arpContext := arp.ConstructArpClient(macAddr, false)
 	d.ctx = &dhcp6Context{
 		dhcpIn:      make(chan []byte, 100),
 		arpClient:   arpClient,
