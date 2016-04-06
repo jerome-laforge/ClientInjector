@@ -27,6 +27,7 @@ type dhcp6Context struct {
 
 func (self *dhcp6Context) resetLease() {
 	if ipAddr := self.IpAddr.Load().(net.IP); !ipAddr.IsUnspecified() {
+		rand.Read(self.xid[:])
 		arp.MapArpByIp.Reset(ipAddr)
 		self.IpAddr.Store(net.IPv6unspecified)
 	}
