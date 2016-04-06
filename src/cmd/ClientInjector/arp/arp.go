@@ -78,7 +78,7 @@ func (self *ArpClient) manageArpPacket() {
 		arpRcv = <-self.ctx.ArpIn
 		ipAddr := self.ctx.IpAddr.Load().(net.IP)
 
-		if !bytes.Equal(arpRcv.DstHwAddress, HwAddrBcast) && !bytes.Equal(arpRcv.DstHwAddress, self.ctx.MacAddr) {
+		if !bytes.Equal(arpRcv.DstHwAddress, self.ctx.MacAddr) && !bytes.Equal(arpRcv.DstHwAddress, HwAddrZero) && !bytes.Equal(arpRcv.DstHwAddress, HwAddrBcast) {
 			log.Println(self.ctx.MacAddr, "Recieve ARP request for", ipAddr, " but it is ignored because DstMacAddr is inconsistent ")
 			continue
 		}
