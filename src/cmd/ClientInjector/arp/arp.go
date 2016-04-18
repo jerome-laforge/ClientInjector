@@ -25,19 +25,19 @@ type ArpInByIp struct {
 
 func (self *ArpInByIp) Set(ip net.IP, inArp chan *layers.ARP) {
 	self.mutex.Lock()
-	MapArpByIp.arpInMap[string(ip)] = inArp
+	self.arpInMap[string(ip)] = inArp
 	self.mutex.Unlock()
 }
 
 func (self *ArpInByIp) Reset(ip net.IP) {
 	self.mutex.Lock()
-	delete(MapArpByIp.arpInMap, string(ip))
+	delete(self.arpInMap, string(ip))
 	self.mutex.Unlock()
 }
 
 func (self *ArpInByIp) Lookup(ip net.IP) (chan *layers.ARP, bool) {
 	self.mutex.RLock()
-	inArp, ok := MapArpByIp.arpInMap[string(ip)]
+	inArp, ok := self.arpInMap[string(ip)]
 	self.mutex.RUnlock()
 
 	return inArp, ok
