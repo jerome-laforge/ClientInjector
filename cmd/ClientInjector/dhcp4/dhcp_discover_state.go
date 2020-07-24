@@ -61,6 +61,7 @@ func (_ discoverState) do(ctx *dhcpContext) iState {
 
 	bootp := &layer.PayloadLayer{
 		Contents: discover.Raw,
+		LT:       layers.LayerTypeDHCPv4,
 	}
 
 	var (

@@ -99,6 +99,7 @@ func main() {
 
 	dhcpv6 := &layer.PayloadLayer{
 		Contents: ba,
+		LT:       layers.LayerTypeDHCPv6,
 	}
 
 	err = network.OpenPcapHandle(*paramIfaceName, "")

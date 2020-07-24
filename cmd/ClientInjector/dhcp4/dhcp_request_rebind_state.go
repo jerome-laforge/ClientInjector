@@ -69,6 +69,7 @@ func (_ requestRebindState) do(ctx *dhcpContext) iState {
 
 	bootp := &layer.PayloadLayer{
 		Contents: request.Raw,
+		LT:       layers.LayerTypeDHCPv4,
 	}
 
 	for {
