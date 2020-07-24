@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"github.com/google/gopacket/layers"
-	"github.com/jerome-laforge/dhcp6"
+	"github.com/mdlayher/dhcp6"
+	"github.com/mdlayher/dhcp6/dhcp6opts"
 
 	"github.com/jerome-laforge/ClientInjector/cmd/ClientInjector/arp"
 	"github.com/jerome-laforge/ClientInjector/cmd/ClientInjector/layer"
@@ -43,11 +44,11 @@ func main() {
 		packet.TransactionID[i] = byte(r>>uint(i)) & 0xFF
 	}
 
-	packet.Options.Add(dhcp6.OptionClientID, dhcp6.NewDUIDLL(1, firstMacAddr))
-	packet.Options.Add(dhcp6.OptionElapsedTime, dhcp6.ElapsedTime(0))
+	packet.Options.Add(dhcp6.OptionClientID, dhcp6opts.NewDUIDLL(1, firstMacAddr))
+	packet.Options.Add(dhcp6.OptionElapsedTime, dhcp6opts.ElapsedTime(0))
 
 	// RelayMessage
-	relayMsg := &dhcp6.RelayMessage{
+	relayMsg := &dhcp6opts.RelayMessage{
 		MessageType: dhcp6.MessageTypeRelayForw,
 		Options:     make(map[dhcp6.OptionCode][][]byte),
 	}
@@ -63,11 +64,11 @@ func main() {
 		count++
 	}
 
-	relayOption := new(dhcp6.RelayMessageOption)
+	relayOption := new(dhcp6opts.RelayMessageOption)
 	relayOption.SetClientServerMessage(packet)
 	relayMsg.Options.Add(dhcp6.OptionRelayMsg, relayOption)
 
-	interfaceId := dhcp6.RelayMessageOption([]byte("interfaceId"))
+	interfaceId := dhcp6opts.RelayMessageOption("interfaceId")
 	relayMsg.Options.Add(dhcp6.OptionInterfaceID, &interfaceId)
 
 	ba, err := relayMsg.MarshalBinary()
